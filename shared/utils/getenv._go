@@ -1,0 +1,26 @@
+package utils
+
+import (
+	"fmt"
+	"os"
+)
+
+// GetenvWithDefault implements os.Getenv with a default value if empty
+func GetenvWithDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		value = defaultValue
+	}
+
+	return value
+}
+
+// GetenvPanic os.Getenv with panic if not exists.
+func GetenvPanic(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		panic(fmt.Errorf("can't get key %v from env", key))
+	}
+
+	return value
+}

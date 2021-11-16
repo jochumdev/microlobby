@@ -1,5 +1,12 @@
 version: '3.7'
 services:
+  nats:
+    image: nats:2.6.4-alpine
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+
   postgresd:
     restart: unless-stopped
     image: docker.io/library/postgres:14
@@ -8,7 +15,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - postgresd:/var/lib/postgresql/data:cached
 
@@ -19,11 +26,33 @@ services:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "8086:80"
+      - 8086:80
     depends_on:
       - postgresd
     volumes:
       - pgadmin:/var/lib/pgadmin
+
+  service_main:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./service_main/docker/Dockerfile
+      args:
+        PACKAGE: service_main
+    image: microlobby-service-main:latest
+    environment:
+      - MICRO_SERVER_ADDRESS=0.0.0.0:8080
+      - MICRO_TRANSPORT=nats
+      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
+    ports:
+      - 8080:8080
+    depends_on:
+      - nats
+      - postgresd
 
 volumes:
   postgresd: {}

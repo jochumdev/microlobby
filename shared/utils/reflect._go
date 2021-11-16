@@ -1,0 +1,17 @@
+package utils
+
+import (
+	"reflect"
+	"runtime"
+	"strings"
+)
+
+// GetFunctionName Guess Struct.Method from the given Function
+func GetFunctionName(i interface{}) string {
+	path := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	// LTrim until the first /
+	path = path[strings.LastIndex(path, "/")+1:]
+
+	// Return after the next point
+	return path[strings.Index(path, ".")+1:]
+}
