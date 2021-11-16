@@ -1,0 +1,30 @@
+version: '3.7'
+services:
+  postgresd:
+    restart: unless-stopped
+    image: docker.io/library/postgres:14
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresd:/var/lib/postgresql/data:cached
+
+  pgadmin:
+    restart: unless-stopped
+    image: docker.io/dpage/pgadmin4:6
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "8086:80"
+    depends_on:
+      - postgresd
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+
+volumes:
+  postgresd: {}
+  pgadmin: {}
