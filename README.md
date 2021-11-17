@@ -25,7 +25,8 @@ Basic Key/Value Store with Permissions
 
 ### Auth Service
 
-Give Username + password and you get a JWT back.
+- Give Username + password and you get a JWT back.
+- Internaly converts a JWT to a user with roles.
 
 ### Lobby Service
 
@@ -38,6 +39,39 @@ Sends E-Mails for us.
 ### OAuth Service
 
 Think it will never be implemented but be part of Profile Service which will be added later.
+
+## Development
+
+### Prerequesits
+
+- GNU Make
+- docker-compose 1.29+
+- podman/docker
+
+### Run
+
+To run this you have to do the following steps:
+
+```bash
+git clone https://github.com/pcdummy/microlobby.git
+cd microlobby
+cp .env.sample .env
+make
+```
+
+### Makefile
+
+- **all**:
+  - calls `docker-compose` to build the builder
+  - builder generates `protobuf` code inside a container over `make _protoc`
+  - calls `docker-compose` to build all services
+  - starts all service containers
+- **builders**: Builds builders
+- **protoc**: Generates protobuf code with the help of a container
+- **build**: Builds the code into containers
+- **run**: Runs containers
+- **down**: Stops them
+- **goupdate**: Update all dependencies
 
 ## Authors
 

@@ -18,7 +18,7 @@ build:
 
 .PHONY: run
 run:
-	docker-compose --profile app up -d
+	docker-compose --profile app up -d --remove-orphans
 
 .PHONY: down
 down:
