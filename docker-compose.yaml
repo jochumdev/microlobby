@@ -77,8 +77,48 @@ services:
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
-    ports:
-      - 8080:8080
+    depends_on:
+      - nats
+      - postgresd
+    profiles:
+      - app
+
+  auth:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/genericservice/Dockerfile
+      args:
+        PACKAGE: auth
+    image: microlobby-service-auth:latest
+    environment:
+      - MICRO_TRANSPORT=nats
+      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
+    depends_on:
+      - nats
+      - postgresd
+    profiles:
+      - app
+
+  settings:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/genericservice/Dockerfile
+      args:
+        PACKAGE: settings
+    image: microlobby-service-settings:latest
+    environment:
+      - MICRO_TRANSPORT=nats
+      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
     depends_on:
       - nats
       - postgresd

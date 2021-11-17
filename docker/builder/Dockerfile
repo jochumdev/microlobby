@@ -8,6 +8,8 @@ RUN apt-get update && \
 # Create the Volumes
 RUN mkdir /microlobby && chown -R root: /microlobby && cd /microlobby
 
+COPY ./scripts /scripts
+
 # Run as user from here
 WORKDIR /microlobby
 

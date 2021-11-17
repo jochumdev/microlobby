@@ -1,0 +1,109 @@
+version: '3'
+
+dotenv: [".env"]
+
+vars:
+  CMD_PODMAN:
+    sh: command -v podman
+  CMD_DOCKER:
+    sh: command -v docker
+  CMD_DCOMPOSE:
+    sh: command -v docker-compose
+
+tasks:
+  default:
+    desc: Build and run microlobby
+    cmds:
+      - task: tools:build
+      - task: generate:protoc
+      - task: build
+      - task: run
+
+  tools:build:
+    deps:
+     - check:toolchain
+    cmds:
+      - docker-compose --profile tools build
+
+  build:
+    desc: Build all containers
+    deps:
+      - check:toolchain
+    cmds:
+      - |
+        # Run with podman
+        test -z "{{.CMD_PODMAN}}" && exit 0
+        for svc in {{.SERVICES}}; do 
+          podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-service-${svc}:latest --build-arg=PACKAGE=${svc} -f docker/genericservice/Dockerfile . || exit 1
+        done
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" && exit 0
+        docker-compose --profile app build
+    
+  run:
+    desc: Run all containers
+    deps:
+      - check:toolchain
+    cmds:
+      - docker-compose --profile app up -d --remove-orphans
+      
+  down:
+    desc: Stopp all containers
+    deps:
+      - check:toolchain
+    cmds:
+      - docker-compose --profile app down
+
+  download:
+    desc: Download go dependencies
+    deps:
+      - check:toolchain
+    cmds:
+      - |
+        # Run with podman
+        test -n "{{.CMD_PODMAN}}" && \
+        podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder sh -c "cd /microlobby && go mod download"
+
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" || \
+        docker-compose --profile tools run --rm builder sh -c "go mod download"
+
+  generate:protoc:
+    desc: Generate protobuf files
+    deps:
+      - check:toolchain
+    cmds:
+      - |
+        # Run with podman
+        test -n "{{.CMD_PODMAN}}" && \
+        podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder /scripts/protogen.sh "{{.SERVICES}}"
+
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" || \
+        docker-compose --profile tools run --rm builder /scripts/protogen.sh "{{.SERVICES}}"
+  
+  upgrade:deps:
+    desc: Update all go dependencies
+    deps:
+      - check:toolchain
+    cmds:
+      - |
+        # Run with podman
+        test -n "{{.CMD_PODMAN}}" && \
+        podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder /scripts/upgrade_deps.sh "{{.SERVICES}}"
+
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" || \
+        docker-compose --profile tools run --rm builder /scripts/upgrade_deps.sh "{{.SERVICES}}"
+
+  check:toolchain:
+    run: once
+    desc: Check if you have all tools installed
+    cmds:
+      - test -n "{{.CMD_PODMAN}}" -o -n "{{.CMD_DOCKER}}"
+      - test -n "{{.CMD_DCOMPOSE}}"
+      - test ! -d "{{.GOPATH}}" && mkdir "{{.GOPATH}}" || exit 0

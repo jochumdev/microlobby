@@ -17,7 +17,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceAuthName),
+		micro.Name(defs.ServiceAuth),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 	)

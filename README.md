@@ -4,16 +4,16 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 
 ## Basic Architecture
 
-It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity Transport, Registry and Broker is done over NATS.
+It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Transport, Registry and Broker is done over NATS.
 
-See this draw.io draw for the Architecture:
+The draw.io flowchart for the Architecture:
 ![Micro Service Architecture](/docs/micro-service-architecture.png)
 
 ## Services
 
 ### http_proxy
 
-A very simple Proxy to MicroServices which register routes with it:
+A very simple Proxy to MicroServices. They have to register routes with it:
 
 - Auth Service
 - Lobby Service
@@ -44,7 +44,7 @@ Think it will never be implemented but be part of Profile Service which will be 
 
 ### Prerequesits
 
-- GNU Make
+- [Task](https://taskfile.dev/#/installation)
 - docker-compose 1.29+
 - podman/docker
 
@@ -59,19 +59,25 @@ cp .env.sample .env
 make
 ```
 
-### Makefile
+Now enjoy the [health api](http://localhost:8080/health)
 
-- **all**:
-  - calls `docker-compose` to build the builder
-  - builder generates `protobuf` code inside a container over `make _protoc`
-  - calls `docker-compose` to build all services
-  - starts all service containers
-- **builders**: Builds builders
-- **protoc**: Generates protobuf code with the help of a container
-- **build**: Builds the code into containers
-- **run**: Runs containers
-- **down**: Stops them
-- **goupdate**: Update all dependencies
+### Taskfile
+
+```bash
+task -l
+```
+
+```
+task: Available tasks for this project:
+* build:                Build all containers
+* check:toolchain:      Check if you have all tools installed
+* default:              Build and run microlobby
+* down:                 Stopp all containers
+* download:             Download go dependencies
+* generate:protoc:      Generate protobuf files
+* run:                  Run all containers
+* upgrade:deps:         Update all go dependencies
+```
 
 ## Authors
 
@@ -79,4 +85,7 @@ René Jochum - rene@jochum.dev
 
 ## License
 
-Apache-2.0 License
+Its dual licensed:
+
+- Apache-2.0
+- GPL-2.0-or-later

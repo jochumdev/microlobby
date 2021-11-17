@@ -26,7 +26,7 @@ func main() {
 	router.Use(ginlogrus.Logger(logger.Logger), gin.Recovery())
 
 	service := microWeb.NewService(
-		microWeb.Name(defs.ApiProxy),
+		microWeb.Name(defs.ServiceHttpProxy),
 		microWeb.Version(version.Version),
 		microWeb.Handler(router),
 		microWeb.Flags(registry.Flags()...),

@@ -2,11 +2,13 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/cmd"
+	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
 
 	infoServiceProto "wz2100.net/microlobby/shared/proto/infoservice"
@@ -34,7 +36,11 @@ func (h *Handler) getHealth(c *gin.Context) {
 		return
 	}
 
+	foundServices := make([]string, len(services))
+
 	for _, s := range services {
+		foundServices = append(foundServices, s.Name)
+
 		client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 		resp, err := client.Health(context.TODO(), &empty.Empty{})
 
@@ -45,6 +51,29 @@ func (h *Handler) getHealth(c *gin.Context) {
 				allFine = false
 			}
 		}
+	}
+
+	servicesNotThere := []string{}
+	for _, svcReq := range defs.ServicesRequired {
+		found := false
+		for _, svcFound := range foundServices {
+			if svcFound == svcReq {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			servicesNotThere = append(servicesNotThere, svcReq)
+		}
+	}
+
+	if len(servicesNotThere) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  500,
+			"message": fmt.Sprintf("We see errors, services %s are not there.", servicesNotThere),
+		})
+		return
 	}
 
 	if !allFine {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"wz2100.net/microlobby/service/lobby/version"
+	"wz2100.net/microlobby/service/settings/version"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/infoservice"
@@ -17,7 +17,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceLobby),
+		micro.Name(defs.ServiceSettings),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 	)

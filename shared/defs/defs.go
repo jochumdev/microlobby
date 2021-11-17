@@ -1,5 +1,8 @@
 package defs
 
-const ApiProxy = "api.proxy"
-const ServiceLobbyName = "service.lobby"
-const ServiceAuthName = "service.auth"
+const ServiceHttpProxy = "proxy"
+const ServiceLobby = "lobby"
+const ServiceAuth = "auth"
+const ServiceSettings = "settings"
+
+var ServicesRequired = [...]string{ServiceLobby, ServiceAuth, ServiceSettings}
