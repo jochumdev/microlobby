@@ -9,9 +9,13 @@ RUN apk add --update git ca-certificates
 # Create appuser
 RUN adduser -D -g '' appuser
 
-# Copy the context into /microlobby
-COPY . /microlobby
-WORKDIR /microlobby/${PACKAGE}
+# Copy shared/ and $PACKAGE/ to /microlobby - this speeds up builds and we build less
+COPY ./go.mod /microlobby/go.mod
+COPY ./go.sum /microlobby/go.sum
+COPY ./shared /microlobby/shared
+COPY ./service/${PACKAGE} /microlobby/service/${PACKAGE}
+
+WORKDIR /microlobby/service/${PACKAGE}
 
 RUN go mod download
 

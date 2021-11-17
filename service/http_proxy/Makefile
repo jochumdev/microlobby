@@ -3,7 +3,6 @@ all:
 
 .PHONY: _protoc
 _protoc:
-	${MAKE} -C proto $@
 
 .PHONY: _download
 _download:

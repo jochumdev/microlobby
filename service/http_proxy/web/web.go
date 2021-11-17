@@ -8,9 +8,11 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/cmd"
 	"wz2100.net/microlobby/shared/serviceregistry"
+
+	infoServiceProto "wz2100.net/microlobby/shared/proto/infoservice"
 )
 
-const pkgPath = "wz2100.net/microlobby/service_main/web"
+// const pkgPath = "wz2100.net/microlobby/service_main/web"
 
 type Handler struct{}
 
@@ -23,7 +25,7 @@ func ConfigureRouter(r *gin.Engine) {
 func (h *Handler) getHealth(c *gin.Context) {
 	allFine := true
 
-	services, err := serviceregistry.FindServicesByEndpoint("MAService.Health", *cmd.DefaultOptions().Registry, c)
+	services, err := serviceregistry.ServiceFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  500,
@@ -33,7 +35,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	}
 
 	for _, s := range services {
-		client := maserviceProto.NewMAService(s.Name, *cmd.DefaultOptions().Client)
+		client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 		resp, err := client.Health(context.TODO(), &empty.Empty{})
 
 		if err != nil {

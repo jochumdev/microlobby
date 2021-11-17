@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// GetFunctionName Guess Struct.Method from the given Function
-func GetFunctionName(i interface{}) string {
+// ReflectFunctionName Guess Struct.Method from the given Function
+func ReflectFunctionName(i interface{}) string {
 	path := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 	// LTrim until the first /
 	path = path[strings.LastIndex(path, "/")+1:]

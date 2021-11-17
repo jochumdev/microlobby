@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3'
 services:
   nats:
     image: nats:2.6.4-alpine
@@ -6,6 +6,8 @@ services:
       - "4222:4222"
       - "6222:6222"
       - "8222:8222"
+    profiles:
+      - app
 
   postgresd:
     restart: unless-stopped
@@ -18,6 +20,8 @@ services:
       - 5432:5432
     volumes:
       - postgresd:/var/lib/postgresql/data:cached
+    profiles:
+      - app
 
   pgadmin:
     restart: unless-stopped
@@ -31,15 +35,17 @@ services:
       - postgresd
     volumes:
       - pgadmin:/var/lib/pgadmin
+    profiles:
+      - app
 
-  service_main:
+  http_proxy:
     restart: unless-stopped
     build:
       context: .
-      dockerfile: ./service_main/docker/Dockerfile
+      dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: service_main
-    image: microlobby-service-main:latest
+        PACKAGE: http_proxy
+    image: microlobby-service-http_proxy:latest
     environment:
       - MICRO_SERVER_ADDRESS=0.0.0.0:8080
       - MICRO_TRANSPORT=nats
@@ -53,6 +59,44 @@ services:
     depends_on:
       - nats
       - postgresd
+    profiles:
+      - app
+
+  lobby:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/genericservice/Dockerfile
+      args:
+        PACKAGE: lobby
+    image: microlobby-service-lobby:latest
+    environment:
+      - MICRO_TRANSPORT=nats
+      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
+    ports:
+      - 8080:8080
+    depends_on:
+      - nats
+      - postgresd
+    profiles:
+      - app
+
+  builder:
+    restart: "no"
+    build:
+      context: ./docker/builder
+    image: microlobby-builder:latest
+    environment:
+      - GOPROXY=https://proxy.golang.org,direct
+    volumes:
+      - "~/go:/go:rw"
+      - ".:/microlobby:rw"
+    profiles:
+      - tools
 
 volumes:
   postgresd: {}

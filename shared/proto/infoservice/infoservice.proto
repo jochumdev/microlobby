@@ -1,0 +1,49 @@
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package shared.infoservice;
+
+option go_package = "wz2100.net/microlobby/shared/proto/infoservice";
+
+import "google/protobuf/empty.proto";
+
+service InfoService {
+    rpc Health (google.protobuf.Empty) returns (HealthReply) {}
+    rpc Routes (google.protobuf.Empty) returns (RoutesReply) {}
+}
+
+message RoutesReply {
+    message Route {
+        bool apiRoute = 1;
+        string method = 2;
+        string path = 3;
+        string endpoint = 4;
+        string requireRole = 5;
+        repeated string params = 6;
+        repeated string intersectsRoles = 7;
+    }
+
+    repeated Route routes = 1;
+}
+
+message HealthReply {
+    message HealthInfo {
+        string message = 1;
+        bool isError = 2;
+    }
+
+    map<string, HealthInfo> infos = 1;
+    bool hasError = 2;
+}

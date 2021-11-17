@@ -1,20 +1,9 @@
 {
+    "go.toolsEnvVars": {
+        "GOPROXY": "direct",
+        "GONOPROXY": "none;",
+    },
 	"folders": [
-		{
-			"path": "docs"
-		},
-		{
-			"path": "shared"
-		},
-		{
-			"path": "service_lobby"
-		},
-		{
-			"path": "service_auth"
-		},
-		{
-			"path": "service_main"
-		},
 		{
 			"path": "."
 		}

@@ -1,4 +1,4 @@
-package main
+package micro_plugins
 
 import (
 	_ "github.com/asim/go-micro/plugins/broker/nats/v4"
