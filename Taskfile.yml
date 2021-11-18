@@ -40,7 +40,35 @@ tasks:
         # Run with docker
         test -n "{{.CMD_PODMAN}}" && exit 0
         docker-compose --profile app build
-    
+
+  buildrun:
+    desc: Run this when you changed something
+    cmds:
+      - task: build
+      - task: run
+
+  service:build:
+    desc: Build a specific service using env var "SERVICE"
+    deps:
+      - check:toolchain
+    cmds:
+      - |
+        # Run with podman
+        test -z "{{.CMD_PODMAN}}" && exit 0
+        podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-service-{{.SERVICE}}:latest --build-arg=PACKAGE={{.SERVICE}} -f docker/genericservice/Dockerfile . || exit 1
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" && exit 0
+        docker-compose --profile app build {{.SERVICE}}
+
+  service:buildrun:
+    desc: Build and run a service using env var "SERVICE"
+    deps:
+      - check:toolchain
+    cmds:
+      - task: service:build
+      - task: run
+  
   run:
     desc: Run all containers
     deps:

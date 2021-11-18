@@ -67,15 +67,18 @@ Now enjoy the [health api](http://localhost:8080/health)
 task -l
 ```
 
-```
+```text
 task: Available tasks for this project:
 * build:                Build all containers
+* buildrun:             Run this when you changed something
 * check:toolchain:      Check if you have all tools installed
 * default:              Build and run microlobby
 * down:                 Stopp all containers
 * download:             Download go dependencies
 * generate:protoc:      Generate protobuf files
 * run:                  Run all containers
+* service:build:        Build a specific service using env var "SERVICE"
+* service:buildrun:     Build and run a service using env var "SERVICE"
 * upgrade:deps:         Update all go dependencies
 ```
 
