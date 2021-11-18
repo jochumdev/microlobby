@@ -1,0 +1,42 @@
+syntax = "proto2";
+
+package authservice;
+
+option go_package = "wz2100.net/microlobby/shared/proto/authservice";
+
+import "google/protobuf/empty.proto";
+import "shared/proto/user/user.proto";
+
+service AuthService {
+    rpc UserList(UserListRequest) returns (UserListResponse) {}
+    rpc UserDetail(UserIDRequest) returns (shared.user.User) {}
+    rpc UserDelete(UserIDRequest) returns (google.protobuf.Empty) {}
+}
+
+message UserListRequest {
+    optional uint64 limit = 1 [default = 10];
+    optional uint64 offset = 2 [default = 0];
+}
+
+message UserListResponse {
+    message User {
+        required string id = 1;
+        required string sub = 2;
+        required string email = 3;
+    }
+
+    repeated User data = 1;
+    required uint64 count = 2;
+    required uint64 limit = 3;
+    required uint64 offset = 4;
+}
+
+message UserIDRequest {
+    required string userId = 1;
+}
+
+message GroupListRequest {
+    optional uint64 limit = 1 [default = 10];
+    optional uint64 offset = 2 [default = 0];
+
+}

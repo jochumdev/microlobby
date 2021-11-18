@@ -31,7 +31,7 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, routes)
+			infoService := infoservice.NewHandler(registry, "v1", routes)
 			infoSvcPb.RegisterInfoServiceHandler(s, infoService)
 
 			return nil

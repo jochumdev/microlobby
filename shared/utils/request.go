@@ -12,7 +12,7 @@ func RequestToContext(ctx context.Context, r *http.Request) context.Context {
 	md := make(metadata.Metadata, len(r.Header))
 	for k, v := range r.Header {
 		if k == "Authorization" {
-			k = "X-Minadmin-Authorization"
+			k = "X-Microlobby-Authorization"
 		}
 		md[k] = strings.Join(v, ",")
 	}

@@ -11,9 +11,9 @@ import (
 
 	"wz2100.net/microlobby/service/http_proxy/version"
 	"wz2100.net/microlobby/service/http_proxy/web"
+	"wz2100.net/microlobby/service/http_proxy/web/proxy"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
-	"wz2100.net/microlobby/shared/logger"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 )
 
@@ -22,8 +22,6 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-
-	router.Use(ginlogrus.Logger(logger.Logger), gin.Recovery())
 
 	service := microWeb.NewService(
 		microWeb.Name(defs.ServiceHttpProxy),
@@ -35,9 +33,19 @@ func main() {
 	if err := service.Init(microWeb.Action(func(c *cli.Context) {
 		if err := registry.Init(c); err != nil {
 			log.Fatal(err)
+			return
 		}
 
-		web.ConfigureRouter(router)
+		logrusc, err := component.Logrus(registry)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		router.Use(ginlogrus.Logger(logrusc.Logger()), gin.Recovery())
+
+		web.ConfigureRouter(registry, router)
+		proxy.ConfigureRouter(registry, router)
 	})); err != nil {
 		log.Fatal(err)
 	}

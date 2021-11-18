@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/cmd"
+	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
 
@@ -18,7 +19,7 @@ import (
 
 type Handler struct{}
 
-func ConfigureRouter(r *gin.Engine) {
+func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) {
 	h := &Handler{}
 
 	r.GET("/health", h.getHealth)
@@ -27,7 +28,7 @@ func ConfigureRouter(r *gin.Engine) {
 func (h *Handler) getHealth(c *gin.Context) {
 	allFine := true
 
-	services, err := serviceregistry.ServiceFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, c)
+	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  500,

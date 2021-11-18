@@ -49,7 +49,7 @@ func ServiceListEndpoints(reg registry.Registry, ctx context.Context) (ServiceLi
 	return endpoints, nil
 }
 
-func ServiceFindByEndpoint(endpoint string, reg registry.Registry, ctx context.Context) ([]*registry.Service, error) {
+func ServicesFindByEndpoint(endpoint string, reg registry.Registry, ctx context.Context) ([]*registry.Service, error) {
 	services, err := ServiceListEndpoints(reg, ctx)
 	if err != nil {
 		return []*registry.Service{}, err
