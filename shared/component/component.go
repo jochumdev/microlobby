@@ -48,6 +48,10 @@ func NewRegistry(components ...Component) *Registry {
 
 func (r *Registry) Add(components ...Component) {
 	for _, component := range components {
+		if component == nil {
+			continue
+		}
+
 		if _, ok := r.components[component.Key()]; ok {
 			continue
 		}
@@ -90,11 +94,19 @@ func (r *Registry) Init(context *cli.Context) error {
 		components = append(components, com)
 	}
 	sort.Slice(components, func(i, j int) bool {
+		if components[i] == nil || components[j] == nil {
+			return false
+		}
+
 		return components[i].Priority() < components[j].Priority()
 	})
 
 	// Init them sorted now
 	for _, c := range components {
+		if c == nil {
+			continue
+		}
+
 		if err := c.Init(r, context); err != nil {
 			return err
 		}
