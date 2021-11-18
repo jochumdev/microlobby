@@ -10,7 +10,7 @@ import (
 )
 
 func UserFromContext(ctx context.Context) (*spb.User, error) {
-	clientUser := authservice.NewAuthService(defs.ServiceAuth, *cmd.DefaultOptions().Client)
+	clientUser := authservice.NewAuthService(defs.ServiceAuthV1, *cmd.DefaultOptions().Client)
 
 	me := "me"
 	user, err := clientUser.UserDetail(ctx, &authservice.UserIDRequest{UserId: &me})

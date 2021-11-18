@@ -62,14 +62,14 @@ services:
     profiles:
       - app
 
-  lobby:
+  lobby_v1:
     restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: lobby
-    image: microlobby-service-lobby:latest
+        PACKAGE: lobby_v1
+    image: microlobby-service-lobby_v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222
@@ -83,14 +83,14 @@ services:
     profiles:
       - app
 
-  auth:
+  auth_v1:
     restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: auth
-    image: microlobby-service-auth:latest
+        PACKAGE: auth_v1
+    image: microlobby-service-auth_v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222
@@ -104,14 +104,14 @@ services:
     profiles:
       - app
 
-  settings:
+  settings_v1:
     restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: settings
-    image: microlobby-service-settings:latest
+        PACKAGE: settings_v1
+    image: microlobby-service-setting_v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222

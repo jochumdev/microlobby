@@ -13,9 +13,12 @@ vars:
 tasks:
   default:
     desc: Build and run microlobby
+    env:
+      SERVICE: 
+        var: {{.SERVICES}}
     cmds:
       - task: build:tools
-      - task: generate:protoc
+      - task: service:protoc
       - task: build
       - task: run
 
