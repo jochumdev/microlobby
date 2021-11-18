@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package shared.infoservice;
+package shared.infoservicepb.v1;
 
-option go_package = "wz2100.net/microlobby/shared/proto/infoservice";
+option go_package = "wz2100.net/microlobby/shared/proto/infoservicepb/v1;infoservicepb";
 
 import "google/protobuf/empty.proto";
 

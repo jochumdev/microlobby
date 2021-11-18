@@ -5,15 +5,15 @@ import (
 
 	"go-micro.dev/v4/cmd"
 	"wz2100.net/microlobby/shared/defs"
-	"wz2100.net/microlobby/shared/proto/authservice"
-	spb "wz2100.net/microlobby/shared/proto/user"
+	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
+	"wz2100.net/microlobby/shared/proto/userpb/v1"
 )
 
-func UserFromContext(ctx context.Context) (*spb.User, error) {
-	clientUser := authservice.NewAuthService(defs.ServiceAuthV1, *cmd.DefaultOptions().Client)
+func UserFromContext(ctx context.Context) (*userpb.User, error) {
+	clientUser := authservicepb.NewAuthService(defs.ServiceAuthV1, *cmd.DefaultOptions().Client)
 
 	me := "me"
-	user, err := clientUser.UserDetail(ctx, &authservice.UserIDRequest{UserId: &me})
+	user, err := clientUser.UserDetail(ctx, &authservicepb.UserIDRequest{UserId: &me})
 	if err != nil {
 		return nil, err
 	}

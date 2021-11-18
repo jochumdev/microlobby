@@ -22,7 +22,7 @@ import (
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
 
-	infoServiceProto "wz2100.net/microlobby/shared/proto/infoservice"
+	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
 
 // const pkgPath = "wz2100.net/microlobby/service_main/web/proxy"
@@ -64,7 +64,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					continue
 				}
 
-				client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+				client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 				resp, err := client.Routes(ctx, &empty.Empty{})
 				if err != nil {
 					// failure in getting routes, silently ignore
@@ -103,7 +103,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	return h
 }
 
-func (h *Handler) proxy(serviceName string, route *infoServiceProto.RoutesReply_Route) func(*gin.Context) {
+func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Route) func(*gin.Context) {
 	return func(c *gin.Context) {
 		// Check if the user has the required role
 		if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
@@ -234,7 +234,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 
 	servicesStatus := gin.H{}
 	for _, s := range services {
-		client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+		client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 		resp, err := client.Health(c, &empty.Empty{})
 
 		if err != nil {

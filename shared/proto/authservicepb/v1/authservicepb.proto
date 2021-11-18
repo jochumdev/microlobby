@@ -1,15 +1,15 @@
 syntax = "proto2";
 
-package authservice;
+package shared.authservicepb.v1;
 
-option go_package = "wz2100.net/microlobby/shared/proto/authservice";
+option go_package = "wz2100.net/microlobby/shared/proto/authservicepb/v1;authservicepb";
 
 import "google/protobuf/empty.proto";
-import "shared/proto/user/user.proto";
+import "shared/proto/userpb/v1/userpb.proto";
 
 service AuthService {
     rpc UserList(UserListRequest) returns (UserListResponse) {}
-    rpc UserDetail(UserIDRequest) returns (shared.user.User) {}
+    rpc UserDetail(UserIDRequest) returns (shared.userpb.v1.User) {}
     rpc UserDelete(UserIDRequest) returns (google.protobuf.Empty) {}
 }
 
@@ -33,10 +33,4 @@ message UserListResponse {
 
 message UserIDRequest {
     required string userId = 1;
-}
-
-message GroupListRequest {
-    optional uint64 limit = 1 [default = 10];
-    optional uint64 offset = 2 [default = 0];
-
 }

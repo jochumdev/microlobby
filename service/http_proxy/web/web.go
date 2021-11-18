@@ -12,7 +12,7 @@ import (
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
 
-	infoServiceProto "wz2100.net/microlobby/shared/proto/infoservice"
+	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
 
 // const pkgPath = "wz2100.net/microlobby/service_main/web"
@@ -42,7 +42,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	for _, s := range services {
 		foundServices = append(foundServices, s.Name)
 
-		client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+		client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 		resp, err := client.Health(context.TODO(), &empty.Empty{})
 
 		if err != nil {

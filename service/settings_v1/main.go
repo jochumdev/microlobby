@@ -10,7 +10,7 @@ import (
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/infoservice"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
-	infoSvcPb "wz2100.net/microlobby/shared/proto/infoservice"
+	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 		micro.Flags(registry.Flags()...),
 	)
 
-	routes := []*infoSvcPb.RoutesReply_Route{}
+	routes := []*infoservicepb.RoutesReply_Route{}
 
 	service.Init(
 		micro.Action(func(c *cli.Context) error {
@@ -32,7 +32,7 @@ func main() {
 
 			s := service.Server()
 			infoService := infoservice.NewHandler(registry, defs.ProxyURISettings, "v1", routes)
-			infoSvcPb.RegisterInfoServiceHandler(s, infoService)
+			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
 			return nil
 		}),

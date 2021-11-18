@@ -8,6 +8,7 @@ import (
 	"go-micro.dev/v4/metadata"
 )
 
+// RequestToContext adds HTTP request headers to the context as metadata
 func RequestToContext(ctx context.Context, r *http.Request) context.Context {
 	md := make(metadata.Metadata, len(r.Header))
 	for k, v := range r.Header {

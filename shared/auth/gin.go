@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	"github.com/gin-gonic/gin"
-	userPB "wz2100.net/microlobby/shared/proto/user"
+	"wz2100.net/microlobby/shared/proto/userpb/v1"
 )
 
-func UserFromGinContext(c *gin.Context) (*userPB.User, error) {
+func UserFromGinContext(c *gin.Context) (*userpb.User, error) {
 	userIface, ok := c.Get("user")
 	if !ok {
-		return nil, errors.New("Failed to get user from context")
+		return nil, errors.New("failed to get user from context")
 	}
 
-	return userIface.(*userPB.User), nil
+	return userIface.(*userpb.User), nil
 }
