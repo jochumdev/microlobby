@@ -11,13 +11,14 @@ import (
 // Handler is the handler for wz2100.net/microlobby/shared/proto/infoservice
 type Handler struct {
 	comRegistry *component.Registry
+	proxyURI    string
 	apiVersion  string
 	routes      []*pb.RoutesReply_Route
 }
 
 // NewHandler returns a new srv/user pb handler
-func NewHandler(comRegistry *component.Registry, apiVersion string, routes []*pb.RoutesReply_Route) *Handler {
-	return &Handler{comRegistry, apiVersion, routes}
+func NewHandler(comRegistry *component.Registry, proxyURI, apiVersion string, routes []*pb.RoutesReply_Route) *Handler {
+	return &Handler{comRegistry, proxyURI, apiVersion, routes}
 }
 
 // Health returns information about the health of this service.
@@ -45,6 +46,7 @@ func (h *Handler) Health(ctx context.Context, req *empty.Empty, rsp *pb.HealthRe
 
 // Routes returns the registered routes
 func (h *Handler) Routes(ctx context.Context, req *empty.Empty, rsp *pb.RoutesReply) error {
+	rsp.ProxyURI = h.proxyURI
 	rsp.ApiVersion = h.apiVersion
 	rsp.Routes = h.routes
 

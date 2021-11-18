@@ -17,6 +17,7 @@ import (
 	"go-micro.dev/v4/errors"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/shared/defs"
 	middlewaregin "wz2100.net/microlobby/shared/middleware/gin"
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
@@ -35,7 +36,7 @@ type Handler struct {
 func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	h := &Handler{}
 
-	proxyAuthGroup := r.Group("/proxy")
+	proxyAuthGroup := r.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
 	// proxyAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
 	// proxyAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
 
@@ -70,8 +71,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					continue
 				}
 
-				serviceGroup := r.Group(fmt.Sprintf("/%s/%s", s.Name, resp.GetApiVersion()))
-				serviceAuthGroup := r.Group(fmt.Sprintf("/%s/%s", s.Name, resp.GetApiVersion()))
+				serviceGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
+				serviceAuthGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
 				serviceAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
 				serviceAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
 
@@ -220,8 +221,47 @@ func (h *Handler) proxy(serviceName string, route *infoServiceProto.RoutesReply_
 }
 
 func (h *Handler) getHealth(c *gin.Context) {
+	allFine := true
+
+	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, context.TODO())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "We see errors",
+		})
+		return
+	}
+
+	servicesStatus := gin.H{}
+	for _, s := range services {
+		client := infoServiceProto.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+		resp, err := client.Health(c, &empty.Empty{})
+
+		if err != nil {
+			allFine = false
+
+			servicesStatus[s.Name] = err.Error()
+		} else {
+			if resp.GetHasError() {
+				allFine = false
+			}
+
+			servicesStatus[s.Name] = resp.Infos
+		}
+	}
+
+	if !allFine {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":   500,
+			"message":  "We see errors",
+			"services": servicesStatus,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"status":  200,
-		"message": "Everything is fine",
+		"status":   200,
+		"message":  "Everything is fine",
+		"services": servicesStatus,
 	})
 }

@@ -22,8 +22,9 @@ message RoutesReply {
         repeated string intersectsRoles = 7;
     }
 
-    string apiVersion = 1;
-    repeated Route routes = 2;
+    string proxyURI = 1;
+    string apiVersion = 2;
+    repeated Route routes = 3;
 }
 
 message HealthReply {
