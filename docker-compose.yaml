@@ -44,7 +44,7 @@ services:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: http_proxy
+        SERVICE: http_proxy
     image: microlobby-service-http_proxy:latest
     environment:
       - MICRO_SERVER_ADDRESS=0.0.0.0:8080
@@ -68,8 +68,9 @@ services:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: lobby_v1
-    image: microlobby-service-lobby_v1:latest
+        SERVICE: lobby/v1
+        EXECUTABLE: lobby-v1
+    image: microlobby-service-lobby-v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222
@@ -89,8 +90,9 @@ services:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: auth_v1
-    image: microlobby-service-auth_v1:latest
+        SERVICE: auth/v1
+        EXECUTABLE: auth-v1
+    image: microlobby-service-auth-v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222
@@ -110,8 +112,9 @@ services:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        PACKAGE: settings_v1
-    image: microlobby-service-setting_v1:latest
+        SERVICE: settings/v1
+        EXECUTABLE: settings-v1
+    image: microlobby-service-settings-v1:latest
     environment:
       - MICRO_TRANSPORT=nats
       - MICRO_TRANSPORT_ADDRESS=nats:4222

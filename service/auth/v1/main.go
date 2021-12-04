@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"wz2100.net/microlobby/service/settings_v1/version"
+	"wz2100.net/microlobby/service/auth/v1/version"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/infoservice"
@@ -17,7 +17,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceSettingsV1),
+		micro.Name(defs.ServiceAuthV1),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 	)
@@ -31,7 +31,7 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, defs.ProxyURISettings, "v1", routes)
+			infoService := infoservice.NewHandler(registry, defs.ProxyURIAuth, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
 			return nil

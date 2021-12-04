@@ -14,6 +14,7 @@ tasks:
   default:
     desc: Build and run microlobby
     env:
+      # For service:protoc
       SERVICE: 
         var: {{.SERVICES}}
     cmds:
@@ -31,12 +32,26 @@ tasks:
         # Run with podman
         test -z "{{.CMD_PODMAN}}" && exit 0
         for svc in {{.SERVICES}}; do 
-          podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-service-${svc}:latest --build-arg=PACKAGE=${svc} -f docker/genericservice/Dockerfile . || exit 1
+          podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-service-$(echo ${svc} | sed 's#/#-#g'):latest --build-arg=SERVICE=${svc} --build-arg=EXECUTABLE=$(echo ${svc} | sed 's#/#-#g') -f docker/genericservice/Dockerfile . || exit 1
         done
       - | 
         # Run with docker
         test -n "{{.CMD_PODMAN}}" && exit 0
         docker-compose --profile app build
+
+  build:protoc-gen-micro:
+    run: once
+    cmds:
+    - |
+      # Run with podman
+      test -z "{{.CMD_PODMAN}}" && exit 0
+      test -f "{{.GOPATH}}/bin/protoc-gen-micro" && exit 0
+      podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install go-micro.dev/v4/cmd/protoc-gen-micro@v4 || exit 1
+    - | 
+      # Run with docker
+      test -n "{{.CMD_PODMAN}}" && exit 0
+      test -f "{{.GOPATH}}/bin/protoc-gen-micro" && exit 0
+      docker-compose --profile tools run --rm builder go install go-micro.dev/v4/cmd/protoc-gen-micro@v4
 
   build:tools:
     desc: Build tools
@@ -44,6 +59,7 @@ tasks:
      - check:toolchain
     cmds:
       - docker-compose --profile tools build
+      - task: build:protoc-gen-micro
 
   buildrun:
     desc: Run this when you changed something
