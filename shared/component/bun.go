@@ -10,14 +10,19 @@ import (
 	"github.com/jackc/pgx/log/logrusadapter"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/urfave/cli/v2"
+	"go-micro.dev/v4/server"
+	"go-micro.dev/v4/util/log"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/extra/bundebug"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
+
+const pkgPath = "wz2100.net/microlobby/shared/component"
 
 var errorRetrievingBun = errors.New("retrieving bun")
 var errorBunIsNil = errors.New("bun is nil")
@@ -36,8 +41,23 @@ func NewBUN() *CBUN {
 	return &CBUN{initialized: false}
 }
 
-func ContextWithBun(ctx context.Context, bun *bun.DB) context.Context {
-	return context.WithValue(ctx, CBUNKey{}, bun)
+func BunMicroHdlWrapper(reg *Registry) func(server.HandlerFunc) server.HandlerFunc {
+	return func(in server.HandlerFunc) server.HandlerFunc {
+		return func(ctx context.Context, req server.Request, rsp interface{}) error {
+			bun, err := Bun(reg)
+			if err == nil {
+				ctx = context.WithValue(ctx, CBUNKey{}, bun)
+			} else {
+				if cLogrus, lErr := Logrus(reg); lErr != nil {
+					cLogrus.WithFunc(pkgPath, "BunMicroHdlWrapper").WithField("error", err).Error("no BUN from registry")
+				} else {
+					log.Errorf("no BUN from registry, err was: %s", err)
+				}
+			}
+
+			return in(ctx, req, rsp)
+		}
+	}
 }
 
 func BunFromContext(ctx context.Context) (*bun.DB, error) {
@@ -60,7 +80,7 @@ func Bun(reg *Registry) (*bun.DB, error) {
 	}
 
 	// bunc.Init(serveRegistry, tt.cmd)
-	bun := bunc.(*CBUN).GetDB()
+	bun := bunc.(*CBUN).GetBUN()
 	if bun == nil {
 		return nil, errors.New("bun is nil")
 	}
@@ -87,16 +107,24 @@ func (c *CBUN) Flags() []cli.Flag {
 			Usage:   "bun Database URL",
 			EnvVars: []string{"DATABASE_URL"},
 		},
+		&cli.BoolFlag{
+			Name:        "database-debug",
+			Usage:       "Set it to the debug the database queries",
+			EnvVars:     []string{"DATABASE_DEBUG"},
+			DefaultText: "false",
+			Value:       false,
+		},
+		&cli.StringFlag{
+			Name:    "migrations-table",
+			Value:   "migrations",
+			Usage:   "Table to store migrations info",
+			EnvVars: []string{"MIGRATIONS_TABLE"},
+		},
 		&cli.StringFlag{
 			Name:    "migrations-dir",
 			Value:   "/migrations",
 			Usage:   "Folder which contains migrations",
 			EnvVars: []string{"MIGRATIONS_DIR"},
-		},
-		&cli.StringFlag{
-			Name:    "migrations-table",
-			Usage:   "Table to store migrations info",
-			EnvVars: []string{"MIGRATIONS_TABLE"},
 		},
 	}
 }
@@ -143,6 +171,11 @@ func (c *CBUN) Init(registry *Registry, cli *cli.Context) error {
 		return errors.New("failed to create bun")
 	}
 
+	if cli.Bool("database-debug") {
+		// Print all queries to stdout.
+		c.Bun.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	}
+
 	c.initialized = true
 
 	return nil
@@ -174,6 +207,6 @@ func (c *CBUN) Close() error {
 	return nil
 }
 
-func (c *CBUN) GetDB() *bun.DB {
+func (c *CBUN) GetBUN() *bun.DB {
 	return c.Bun
 }

@@ -13,6 +13,8 @@ service InfoService {
 
 message RoutesReply {
     message Route {
+        // No Roles = no Auth
+	    // GlobalRoute = no prefix route
         bool globalRoute = 1;
         string method = 2;
         string path = 3;

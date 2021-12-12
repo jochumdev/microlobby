@@ -21,7 +21,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut())
 
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	router := gin.New()
 
 	service := microWeb.NewService(
 		microWeb.Name(defs.ServiceHttpProxy),

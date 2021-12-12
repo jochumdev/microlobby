@@ -69,17 +69,21 @@ task -l
 
 ```text
 task: Available tasks for this project:
-* build:                Build all containers
-* buildrun:             Run this when you changed something
-* check:toolchain:      Check if you have all tools installed
-* default:              Build and run microlobby
-* down:                 Stopp all containers
-* download:             Download go dependencies
-* generate:protoc:      Generate protobuf files
-* run:                  Run all containers
-* service:build:        Build a specific service using env var "SERVICE"
-* service:buildrun:     Build and run a service using env var "SERVICE"
-* upgrade:deps:         Update all go dependencies
+* build: 		Build all containers
+* build:tools: 		Build tools
+* buildup: 		Run this when you changed something
+* check:toolchain: 	Check if you have all tools installed
+* default: 		Build and run microlobby
+* down: 		Stopp all containers
+* download: 		Download go dependencies
+* service:auth_v1: 	Build and run/restart auth/v1, restart http_proxy
+* service:build: 	Build a specific service using env var "SERVICE"
+* service:buildrun: 	Build and run a service using env var "SERVICE"
+* service:http_proxy: 	Build and run/restart http_proxy
+* service:protoc: 	Generate shared protobuf files and those for a service
+* sysctl: 		Run sysctl to allow <=80 ports
+* up: 			Run all containers
+* upgrade:deps: 	Update all go dependencies
 ```
 
 ## Authors

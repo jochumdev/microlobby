@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package shared.authservicepb.v1;
 
@@ -8,29 +8,65 @@ import "google/protobuf/empty.proto";
 import "shared/proto/userpb/v1/userpb.proto";
 
 service AuthService {
-    rpc UserList(UserListRequest) returns (UserListResponse) {}
+    rpc UserList(ListRequest) returns (UserListResponse) {}
     rpc UserDetail(UserIDRequest) returns (shared.userpb.v1.User) {}
     rpc UserDelete(UserIDRequest) returns (google.protobuf.Empty) {}
+    rpc UserUpdateRoles(UpdateRolesRequest) returns (shared.userpb.v1.User) {}
+
+    rpc TokenList(ListRequest) returns (TokenListResponse) {}
+    rpc TokenDetail(Token) returns (shared.userpb.v1.User) {}
+    rpc TokenRefresh(Token) returns (Token) {}
+    rpc TokenDelete(Token) returns (google.protobuf.Empty) {}
+
+    rpc Register(shared.userpb.v1.User) returns (google.protobuf.Empty) {}
+    rpc Login(LoginRequest) returns (Token) {}
+    rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
 
-message UserListRequest {
-    optional uint64 limit = 1 [default = 10];
-    optional uint64 offset = 2 [default = 0];
+message ListRequest {
+    uint64 limit = 1;
+    uint64 offset = 2;
 }
 
 message UserListResponse {
     message User {
-        required string id = 1;
-        required string sub = 2;
-        required string email = 3;
+        string id = 1;
+        string email = 2;
+        string username = 3;
     }
 
     repeated User data = 1;
-    required uint64 count = 2;
-    required uint64 limit = 3;
-    required uint64 offset = 4;
+    uint64 count = 2;
+    uint64 limit = 3;
+    uint64 offset = 4;
 }
 
 message UserIDRequest {
-    required string userId = 1;
+    string userId = 1;
+}
+
+message UpdateRolesRequest {
+    string userId = 1;
+    repeated string roles = 2;
+}
+
+message TokenListResponse {
+    message TokenData {
+        string userId = 1;
+        string token = 2;    
+    }
+
+    repeated TokenData data = 1;
+    uint64 count = 2;
+    uint64 limit = 3;
+    uint64 offset = 4;
+}
+
+message Token {
+    string token = 1;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
 }

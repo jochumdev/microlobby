@@ -11,7 +11,9 @@ services:
 
   postgresd:
     restart: unless-stopped
-    image: docker.io/library/postgres:14
+    build:
+      context: ./docker/postgresd
+    image: microlobby-postgresd:latest
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -69,7 +71,6 @@ services:
       dockerfile: ./docker/genericservice/Dockerfile
       args:
         SERVICE: lobby/v1
-        EXECUTABLE: lobby-v1
     image: microlobby-service-lobby-v1:latest
     environment:
       - MICRO_TRANSPORT=nats
@@ -91,7 +92,6 @@ services:
       dockerfile: ./docker/genericservice/Dockerfile
       args:
         SERVICE: auth/v1
-        EXECUTABLE: auth-v1
     image: microlobby-service-auth-v1:latest
     environment:
       - MICRO_TRANSPORT=nats
@@ -100,6 +100,8 @@ services:
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
+      - DATABASE_DEBUG=true
+      - DATABASE_URL=${ML_AUTH_DB_URL}
     depends_on:
       - nats
       - postgresd
@@ -113,7 +115,6 @@ services:
       dockerfile: ./docker/genericservice/Dockerfile
       args:
         SERVICE: settings/v1
-        EXECUTABLE: settings-v1
     image: microlobby-service-settings-v1:latest
     environment:
       - MICRO_TRANSPORT=nats

@@ -6,11 +6,8 @@ option go_package = "wz2100.net/microlobby/shared/proto/userpb/v1;userpb";
 
 message User {
     string id = 1;
-    string sub = 2;
-    string name = 3;
-    string preferred_username = 4;
-    string given_name = 5;
-    string family_name = 6;
-    string email = 7;
-    repeated string roles = 8;
+    string username = 2;
+    string email = 3;
+    string token = 4;
+    repeated string roles = 5;
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,39 +14,49 @@ import (
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/cmd"
 	"go-micro.dev/v4/errors"
-	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
-	middlewaregin "wz2100.net/microlobby/shared/middleware/gin"
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
 
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
 
-// const pkgPath = "wz2100.net/microlobby/service_main/web/proxy"
+const pkgPath = "wz2100.net/microlobby/http_proxy/web/proxy"
+
+type JSONRoute struct {
+	Method string `json:"method"`
+	Path   string `json:"path"`
+}
 
 // Handler is the handler for the proxy
 type Handler struct {
-	registerdServices []string
+	cRegistry        *component.Registry
+	registeredRoutes map[string]bool
+	routingengine    *gin.Engine
 }
 
 // ConfigureRouter creates a new Handler and configures it on the router
 func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
-	h := &Handler{}
+	h := &Handler{
+		cRegistry:        cregistry,
+		registeredRoutes: make(map[string]bool),
+		routingengine:    r,
+	}
 
 	proxyAuthGroup := r.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
 	// proxyAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
 	// proxyAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
 
 	proxyAuthGroup.GET("/v1/health", h.getHealth)
+	proxyAuthGroup.GET("/v1/routes", h.getRoutes)
 
 	globalGroup := r.Group("")
 	globalAuthGroup := r.Group("")
-	globalAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
-	globalAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
+	// globalAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
+	// globalAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
 
-	// Refresh routes for the proxy every 30 seconds
+	// Refresh routes for the proxy every 10 seconds
 	go func() {
 		ctx := context.Background()
 
@@ -58,12 +67,6 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 			}
 
 			for _, s := range services {
-				i := sort.SearchStrings(h.registerdServices, s.Name)
-				if i < len(h.registerdServices) && h.registerdServices[i] == s.Name {
-					// already registered
-					continue
-				}
-
 				client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
 				resp, err := client.Routes(ctx, &empty.Empty{})
 				if err != nil {
@@ -73,30 +76,36 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 
 				serviceGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
 				serviceAuthGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
-				serviceAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
-				serviceAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
+				// serviceAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
+				// serviceAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
 
 				for _, route := range resp.Routes {
+					var g *gin.RouterGroup = nil
+
 					if route.GetGlobalRoute() {
 						if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
-							globalAuthGroup.Handle(route.GetMethod(), route.GetPath(), h.proxy(s.Name, route))
+							g = globalAuthGroup
 						} else {
-							globalGroup.Handle(route.GetMethod(), route.GetPath(), h.proxy(s.Name, route))
+							g = globalGroup
 						}
 					} else {
 						if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
-							serviceAuthGroup.Handle(route.GetMethod(), route.GetPath(), h.proxy(s.Name, route))
+							g = serviceAuthGroup
 						} else {
-							serviceGroup.Handle(route.GetMethod(), route.GetPath(), h.proxy(s.Name, route))
+							g = serviceGroup
 						}
 					}
-				}
 
-				h.registerdServices = append(h.registerdServices, s.Name)
-				sort.Strings(h.registerdServices)
+					// Calculate the path of the route and register it if it's not registered yet
+					path := fmt.Sprintf("%s: %s/%s", route.Method, g.BasePath(), route.Path)
+					if _, ok := h.registeredRoutes[path]; !ok {
+						g.Handle(route.GetMethod(), route.GetPath(), h.proxy(s.Name, route))
+						h.registeredRoutes[path] = true
+					}
+				}
 			}
 
-			time.Sleep(30 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}()
 
@@ -106,36 +115,36 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Route) func(*gin.Context) {
 	return func(c *gin.Context) {
 		// Check if the user has the required role
-		if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
-			u, err := auth.UserFromGinContext(c)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"status":  http.StatusInternalServerError,
-					"message": err,
-				})
-				return
-			}
+		// if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
+		// 	u, err := auth.UserFromGinContext(c)
+		// 	if err != nil {
+		// 		c.JSON(http.StatusInternalServerError, gin.H{
+		// 			"status":  http.StatusInternalServerError,
+		// 			"message": err,
+		// 		})
+		// 		return
+		// 	}
 
-			if len(route.RequireRole) > 0 {
-				if !auth.HasRole(u, route.GetRequireRole()) {
-					c.JSON(http.StatusForbidden, gin.H{
-						"status":  http.StatusForbidden,
-						"message": "You don't have the privileges to access this resource",
-					})
-					return
-				}
-			}
+		// 	if len(route.RequireRole) > 0 {
+		// 		if !auth.HasRole(u, route.GetRequireRole()) {
+		// 			c.JSON(http.StatusForbidden, gin.H{
+		// 				"status":  http.StatusForbidden,
+		// 				"message": "You don't have the privileges to access this resource",
+		// 			})
+		// 			return
+		// 		}
+		// 	}
 
-			if len(route.IntersectsRoles) > 0 {
-				if !auth.IntersectsRoles(u, route.GetIntersectsRoles()...) {
-					c.JSON(http.StatusForbidden, gin.H{
-						"status":  http.StatusForbidden,
-						"message": "You don't have the privileges to access this resource",
-					})
-					return
-				}
-			}
-		}
+		// 	if len(route.IntersectsRoles) > 0 {
+		// 		if !auth.IntersectsRoles(u, route.GetIntersectsRoles()...) {
+		// 			c.JSON(http.StatusForbidden, gin.H{
+		// 				"status":  http.StatusForbidden,
+		// 				"message": "You don't have the privileges to access this resource",
+		// 			})
+		// 			return
+		// 		}
+		// 	}
+		// }
 
 		// Map query/path params
 		params := make(map[string]string)
@@ -187,6 +196,13 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 
 				}
 			} else {
+				if c.ContentType() == "" {
+					c.JSON(http.StatusUnsupportedMediaType, gin.H{
+						"status":  http.StatusUnsupportedMediaType,
+						"message": "provide a content-type header",
+					})
+					return
+				}
 				c.ShouldBind(&request)
 			}
 		}
@@ -204,12 +220,16 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 		var response json.RawMessage
 		err := (*cmd.DefaultOptions().Client).Call(ctx, req, &response)
 		if err != nil {
-			pErr := errors.FromError(err)
-			code := int32(http.StatusInternalServerError)
-			if pErr.Code != 0 {
-				code = pErr.Code
+			if cLogrus, lErr := component.Logrus(h.cRegistry); lErr != nil {
+				cLogrus.WithClassFunc(pkgPath, "Handler", "proxy").Error(err)
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
+
+			pErr := errors.FromError(err)
+			code := int(http.StatusInternalServerError)
+			if pErr.Code != 0 {
+				code = int(pErr.Code)
+			}
+			c.JSON(code, gin.H{
 				"status":  code,
 				"message": pErr.Detail,
 			})
@@ -263,5 +283,19 @@ func (h *Handler) getHealth(c *gin.Context) {
 		"status":   200,
 		"message":  "Everything is fine",
 		"services": servicesStatus,
+	})
+}
+
+func (h *Handler) getRoutes(c *gin.Context) {
+	ginRoutes := h.routingengine.Routes()
+	rRoutes := []JSONRoute{}
+	for _, route := range ginRoutes {
+		rRoutes = append(rRoutes, JSONRoute{Method: route.Method, Path: route.Path})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  200,
+		"message": "Dumping the routes *lalalala*",
+		"data":    rRoutes,
 	})
 }
