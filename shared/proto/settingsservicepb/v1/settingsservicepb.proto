@@ -31,11 +31,19 @@ message UpdateRequest {
 
 message GetRequest {
     string id = 1;
+    string ownerId = 2;
+    string service = 3;
+    string name = 4;
 }
 
 message ListRequest {
-    uint64 limit = 1;
-    uint64 offset = 2;
+    string id = 1;
+    string ownerId = 2;
+    string service = 3;
+    string name = 4;
+
+    uint64 limit = 5;
+    uint64 offset = 6;
 }
 
 message Setting {
@@ -51,7 +59,7 @@ message Setting {
 }
 
 message SettingsList {
-    repeated Setting settings = 1;
+    repeated Setting data = 1;
     uint64 count = 2;
     uint64 limit = 3;
     uint64 offset = 4;

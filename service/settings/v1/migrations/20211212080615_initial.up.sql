@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE public.settings
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v1mc(),
@@ -6,12 +8,16 @@ CREATE TABLE public.settings
     service varchar(32) COLLATE pg_catalog."default",
     name varchar(32) COLLATE pg_catalog."default" NOT NULL,
 
-    content TEXT,
+    content TEXT COLLATE pg_catalog."default" ,
 
     roles_read varchar(32)[] COLLATE pg_catalog."default",
     roles_update varchar(32)[] COLLATE pg_catalog."default",
 
     created_at TIMESTAMPTZ DEFAULT Now(),
     updated_at TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+
+    UNIQUE(owner_id, service, name)
 );
+
+COMMIT;
