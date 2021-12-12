@@ -116,7 +116,7 @@ func (c *CBUN) Flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "migrations-table",
-			Value:   "migrations",
+			Value:   "schema_migrations",
 			Usage:   "Table to store migrations info",
 			EnvVars: []string{"MIGRATIONS_TABLE"},
 		},
@@ -162,6 +162,7 @@ func (c *CBUN) Init(registry *Registry, cli *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if err := m.Up(); err != migrate.ErrNoChange && err != nil {
 		return err
 	}
