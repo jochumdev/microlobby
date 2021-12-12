@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package shared.settingsservicepb.v1;
+
+option go_package = "wz2100.net/microlobby/shared/proto/settingsservicepb/v1;settingsservicepb";
+
+import "google/protobuf/timestamp.proto";
+
+service SettingsV1Service {
+    rpc Create(CreateRequest) returns (Setting) {}
+    rpc Update(UpdateRequest) returns (Setting) {}
+    rpc Get(GetRequest) returns (Setting) {}
+    rpc List(ListRequest) returns (SettingsList) {}
+}
+
+message CreateRequest {
+    string service = 1;
+    string ownerId = 2;
+
+    string name = 3;
+    string content = 4;
+
+    repeated string rolesRead = 5;
+    repeated string rolesWrite = 6;
+}
+
+message UpdateRequest {
+    string id = 1;
+    string content = 2;
+}
+
+message GetRequest {
+    string id = 1;
+}
+
+message ListRequest {
+    uint64 limit = 1;
+    uint64 offset = 2;
+}
+
+message Setting {
+    string id = 1;
+    string service = 2;
+    string ownerId = 3;
+
+    string name = 4;
+    string content = 5;
+
+    google.protobuf.Timestamp createdAt = 6;
+    google.protobuf.Timestamp updatedAt = 7;
+}
+
+message SettingsList {
+    repeated Setting settings = 1;
+    uint64 count = 2;
+    uint64 limit = 3;
+    uint64 offset = 4;
+}

@@ -81,6 +81,7 @@ task: Available tasks for this project:
 * service:buildrun: 	Build and run a service using env var "SERVICE"
 * service:http_proxy: 	Build and run/restart http_proxy
 * service:protoc: 	Generate shared protobuf files and those for a service
+* service:settings_v1: 	Build and run/restart settings/v1, restart http_proxy
 * sysctl: 		Run sysctl to allow <=80 ports
 * up: 			Run all containers
 * upgrade:deps: 	Update all go dependencies

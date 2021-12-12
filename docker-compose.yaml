@@ -123,6 +123,8 @@ services:
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
+      - DATABASE_DEBUG=true
+      - DATABASE_URL=${ML_SETTINGS_DB_URL}
     depends_on:
       - nats
       - postgresd
