@@ -7,7 +7,7 @@ option go_package = "wz2100.net/microlobby/shared/proto/authservicepb/v1;authser
 import "google/protobuf/empty.proto";
 import "shared/proto/userpb/v1/userpb.proto";
 
-service AuthService {
+service AuthV1Service {
     rpc UserList(ListRequest) returns (UserListResponse) {}
     rpc UserDetail(UserIDRequest) returns (shared.userpb.v1.User) {}
     rpc UserDelete(UserIDRequest) returns (google.protobuf.Empty) {}

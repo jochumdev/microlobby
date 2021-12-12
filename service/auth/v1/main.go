@@ -34,61 +34,61 @@ func main() {
 		{
 			Method:      http.MethodGet,
 			Path:        "/user",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthService.UserList),
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.UserList),
 			RequireRole: auth.ROLE_ADMIN,
 			Params:      []string{"limit", "offset"},
 		},
 		{
 			Method:   http.MethodDelete,
 			Path:     "/user/:userId",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.UserDelete),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDelete),
 			Params:   []string{"userId"},
 		},
 		{
 			Method:   http.MethodGet,
 			Path:     "/user/:userId",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.UserDetail),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDetail),
 			Params:   []string{"userId"},
 		},
 		{
 			Method:      http.MethodPut,
 			Path:        "/user/:userId/roles",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthService.UserUpdateRoles),
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.UserUpdateRoles),
 			RequireRole: auth.ROLE_SUPERADMIN,
 			Params:      []string{"userId"},
 		},
 		{
 			Method:   http.MethodPost,
 			Path:     "/login",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.Login),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Login),
 		},
 		{
 			Method:   http.MethodPost,
 			Path:     "/logout",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.Logout),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Logout),
 		},
 		{
 			Method:      http.MethodGet,
 			Path:        "/token",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthService.TokenList),
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenList),
 			RequireRole: auth.ROLE_ADMIN,
 		},
 		{
 			Method:   http.MethodGet,
 			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.TokenDetail),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenDetail),
 			Params:   []string{"token"},
 		},
 		{
 			Method:   http.MethodPut,
 			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.TokenRefresh),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenRefresh),
 			Params:   []string{"token"},
 		},
 		{
 			Method:   http.MethodDelete,
 			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthService.TokenDelete),
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenDelete),
 			Params:   []string{"token"},
 		},
 	}
@@ -114,7 +114,7 @@ func main() {
 				logrus.WithFunc(pkgPath, "main").Fatal(err)
 				return err
 			}
-			authservicepb.RegisterAuthServiceHandler(s, authH)
+			authservicepb.RegisterAuthV1ServiceHandler(s, authH)
 
 			return nil
 		}),
