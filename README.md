@@ -9,21 +9,28 @@ It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simp
 The draw.io flowchart for the Architecture:
 ![Micro Service Architecture](/docs/micro-service-architecture.png)
 
+## Features
+
+- gRPC+Protobuf internal, JSON/XML external
+- Argon2 Hashes
+- JWT Tokens
+- Loosely coupled Microservices
+- Fast to copy&paste a service, easy to start a new one
+- Event System as example for IRC/Discord bots
+- All communication over NATS. It scales!
+- No persistent Data, everything is stored in the DB's
+
 ## Services
 
 ### http_proxy
 
-A very simple Proxy to MicroServices. They have to register routes with it:
+A very simple Proxy to MicroServices. They have to register routes with it over the help of infoservice.
 
-- Auth Service
-- Lobby Service
-- Settings Service
-
-### Settings Service
+### settings/v1 Service
 
 Basic Key/Value Store with Permissions
 
-### Auth Service
+### auth/v1 Service
 
 - Give Username + password and you get a JWT back.
 - Internaly converts a JWT to a user with roles.
