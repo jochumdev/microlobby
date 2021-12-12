@@ -9,10 +9,10 @@ import (
 	"wz2100.net/microlobby/shared/proto/userpb/v1"
 )
 
-func UserFromContext(ctx context.Context) (*userpb.User, error) {
+func UserFromToken(ctx context.Context, token string) (*userpb.User, error) {
 	clientUser := authservicepb.NewAuthV1Service(defs.ServiceAuthV1, *cmd.DefaultOptions().Client)
 
-	user, err := clientUser.UserDetail(ctx, &authservicepb.UserIDRequest{UserId: "me"})
+	user, err := clientUser.TokenDetail(ctx, &authservicepb.Token{Token: token})
 	if err != nil {
 		return nil, err
 	}

@@ -19,8 +19,7 @@ const pkgPath = "wz2100.net/microlobby/shared/middleware/gin"
 // UserSrvMiddleware is a middleware for gin that gets the user from the user service.
 func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := utils.RequestToContext(c, c.Request)
-		user, err := auth.UserFromContext(ctx)
+		token, _, err := utils.ExtractToken(c.GetHeader("Authorization"))
 		if err != nil {
 			logrusc, err := component.Logrus(registry)
 			if err != nil {
@@ -32,7 +31,23 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 				WithFields(logrus.Fields{
 					"error": err,
 				}).
-				Error("Info failed")
+				Error("ExtractToken failed")
+			return
+		}
+
+		user, err := auth.UserFromToken(c, token)
+		if err != nil {
+			logrusc, err := component.Logrus(registry)
+			if err != nil {
+				log.Fatalf("Failed to get the logger from the registry, Error was: %s", err)
+				return
+			}
+
+			logrusc.WithFunc(pkgPath, "UserSrvMiddleware").
+				WithFields(logrus.Fields{
+					"error": err,
+				}).
+				Error("UserFromToken failed")
 			return
 		}
 

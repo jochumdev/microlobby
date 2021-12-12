@@ -18,7 +18,7 @@ service AuthV1Service {
     rpc TokenRefresh(Token) returns (Token) {}
     rpc TokenDelete(Token) returns (google.protobuf.Empty) {}
 
-    rpc Register(shared.userpb.v1.User) returns (google.protobuf.Empty) {}
+    rpc Register(RegisterRequest) returns (shared.userpb.v1.User) {}
     rpc Login(LoginRequest) returns (Token) {}
     rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
@@ -64,6 +64,11 @@ message TokenListResponse {
 
 message Token {
     string token = 1;
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
 }
 
 message LoginRequest {

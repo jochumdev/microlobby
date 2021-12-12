@@ -68,6 +68,11 @@ func main() {
 			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Logout),
 		},
 		{
+			Method:   http.MethodPost,
+			Path:     "/register",
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Register),
+		},
+		{
 			Method:      http.MethodGet,
 			Path:        "/token",
 			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenList),

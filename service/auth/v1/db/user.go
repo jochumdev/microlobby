@@ -15,7 +15,7 @@ type User struct {
 	Username      string    `json:"username" yaml:"username"`
 	Password      string    `json:"-" yaml:"-"`
 	Email         string    `json:"email" yaml:"email"`
-	Roles         []string  `bun:",array" json:"roles" yaml:"roles"`
+	Roles         []string  `bun:",array,scanonly" json:"roles" yaml:"roles"`
 
 	Timestamps
 	SoftDelete
@@ -137,6 +137,31 @@ func UserFindByUsername(ctx context.Context, username string) (*User, error) {
 		Where("username = ?", username).
 		Scan(ctx)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func UserCreate(ctx context.Context, username, password string, roles []string) (*User, error) {
+	// Get the database engine
+	bun, err := component.BunFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the user
+	user := User{}
+	user.Username = username
+	user.Password = password
+	_, err = bun.NewInsert().Model(&user).Exec(ctx, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create roles
+	_, err = UserUpdateRoles(ctx, user.ID.String(), roles)
 	if err != nil {
 		return nil, err
 	}

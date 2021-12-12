@@ -7,6 +7,8 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/metadata"
 	"wz2100.net/microlobby/service/auth/v1/db"
+	"wz2100.net/microlobby/shared/argon2"
+	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/userpb/v1"
 	"wz2100.net/microlobby/shared/utils"
@@ -96,7 +98,22 @@ func (s *Handler) TokenRefresh(ctx context.Context, in *authservicepb.Token, out
 	return nil
 }
 
-func (s *Handler) Register(ctx context.Context, in *userpb.User, out *empty.Empty) error {
+func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterRequest, out *userpb.User) error {
+	hash, err := argon2.Hash(in.Password, argon2.DefaultParams)
+	if err != nil {
+		return err
+	}
+
+	result, err := db.UserCreate(ctx, in.Username, hash, []string{auth.ROLE_USER})
+	if err != nil {
+		return err
+	}
+
+	out.Id = result.ID.String()
+	out.Email = result.Email
+	out.Username = result.Username
+	out.Roles = result.Roles
+
 	return nil
 }
 

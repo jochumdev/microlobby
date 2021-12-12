@@ -12,7 +12,7 @@ The draw.io flowchart for the Architecture:
 ## Features
 
 - gRPC+Protobuf internal, JSON/XML external
-- Argon2 Hashes
+- Argon2-id Hashes
 - JWT Tokens
 - Loosely coupled Microservices
 - Fast to copy&paste a service, easy to start a new one
