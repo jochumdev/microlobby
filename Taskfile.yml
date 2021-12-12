@@ -149,6 +149,7 @@ tasks:
       - check:toolchain
     cmds:
       - docker-compose --profile app up -d --remove-orphans
+      - docker-compose ps
       
   down:
     desc: Stopp all containers
