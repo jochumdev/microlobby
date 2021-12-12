@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/metadata"
 	"wz2100.net/microlobby/service/auth/v1/db"
@@ -118,6 +119,35 @@ func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterReques
 }
 
 func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *authservicepb.Token) error {
+	user, err := db.UserFindByUsername(ctx, in.Username)
+	if err != nil {
+		return err
+	}
+
+	ok, err := argon2.Verify(in.Password, user.Password)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("http 403 - wrong username or password")
+	}
+
+	mySigningKey := []byte("AllYourBase")
+
+	// Create the Claims
+	claims := &jwt.StandardClaims{
+		ExpiresAt: 15000,
+		Issuer:    "test",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString(mySigningKey)
+	if err != nil {
+		return err
+	}
+
+	out.Token = ss
+
 	return nil
 }
 
