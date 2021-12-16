@@ -1,11 +1,11 @@
-package gin
+package middlewareGin
 
 import (
+	"errors"
 	"log"
 
 	"net/http"
 
-	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 
 	"github.com/gin-gonic/gin"
@@ -16,10 +16,10 @@ import (
 
 const pkgPath = "wz2100.net/microlobby/shared/middleware/gin"
 
-// UserSrvMiddleware is a middleware for gin that gets the user from the user service.
+// UserSrvMiddleware is a middleware for gin that gets the user from the access token.
 func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, _, err := utils.ExtractToken(c.GetHeader("Authorization"))
+		_, _, err := utils.ExtractToken(c.GetHeader("Authorization"))
 		if err != nil {
 			logrusc, err := component.Logrus(registry)
 			if err != nil {
@@ -35,7 +35,8 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 			return
 		}
 
-		user, err := auth.UserFromToken(c, token)
+		//user, err := auth.UserFromToken(c, token)
+		err = errors.New("test")
 		if err != nil {
 			logrusc, err := component.Logrus(registry)
 			if err != nil {
@@ -51,7 +52,7 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user", user)
+		// c.Set("user", user)
 	}
 }
 

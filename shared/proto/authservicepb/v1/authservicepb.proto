@@ -13,14 +13,8 @@ service AuthV1Service {
     rpc UserDelete(UserIDRequest) returns (google.protobuf.Empty) {}
     rpc UserUpdateRoles(UpdateRolesRequest) returns (shared.userpb.v1.User) {}
 
-    rpc TokenList(ListRequest) returns (TokenListResponse) {}
-    rpc TokenDetail(Token) returns (shared.userpb.v1.User) {}
-    rpc TokenRefresh(Token) returns (Token) {}
-    rpc TokenDelete(Token) returns (google.protobuf.Empty) {}
-
     rpc Register(RegisterRequest) returns (shared.userpb.v1.User) {}
     rpc Login(LoginRequest) returns (Token) {}
-    rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
 
 message ListRequest {
@@ -50,20 +44,11 @@ message UpdateRolesRequest {
     repeated string roles = 2;
 }
 
-message TokenListResponse {
-    message TokenData {
-        string userId = 1;
-        string token = 2;    
-    }
-
-    repeated TokenData data = 1;
-    uint64 count = 2;
-    uint64 limit = 3;
-    uint64 offset = 4;
-}
-
 message Token {
-    string token = 1;
+    string accessToken = 1;
+    int64 accessTokenExpiresAt = 2;
+    string refreshToken = 3;
+    int64 refreshTokenExpiresAt = 4;
 }
 
 message RegisterRequest {

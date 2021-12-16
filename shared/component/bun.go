@@ -10,8 +10,6 @@ import (
 	"github.com/jackc/pgx/log/logrusadapter"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/urfave/cli/v2"
-	"go-micro.dev/v4/server"
-	"go-micro.dev/v4/util/log"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -21,11 +19,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
-
-const pkgPath = "wz2100.net/microlobby/shared/component"
-
-var errorRetrievingBun = errors.New("retrieving bun")
-var errorBunIsNil = errors.New("bun is nil")
 
 type CBUNKey struct{}
 
@@ -41,33 +34,15 @@ func NewBUN() *CBUN {
 	return &CBUN{initialized: false}
 }
 
-func BunMicroHdlWrapper(reg *Registry) func(server.HandlerFunc) server.HandlerFunc {
-	return func(in server.HandlerFunc) server.HandlerFunc {
-		return func(ctx context.Context, req server.Request, rsp interface{}) error {
-			bun, err := Bun(reg)
-			if err == nil {
-				ctx = context.WithValue(ctx, CBUNKey{}, bun)
-			} else {
-				if cLogrus, lErr := Logrus(reg); lErr != nil {
-					cLogrus.WithFunc(pkgPath, "BunMicroHdlWrapper").WithField("error", err).Error("no BUN from registry")
-				} else {
-					log.Errorf("no BUN from registry, err was: %s", err)
-				}
-			}
-
-			return in(ctx, req, rsp)
-		}
-	}
-}
-
 func BunFromContext(ctx context.Context) (*bun.DB, error) {
-	bun, ok := ctx.Value(CBUNKey{}).(*bun.DB)
-	if !ok {
-		return nil, errorRetrievingBun
+	reg, err := RegistryFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	if bun == nil {
-		return nil, errorBunIsNil
+	bun, err := Bun(reg)
+	if err != nil {
+		return nil, err
 	}
 
 	return bun, nil

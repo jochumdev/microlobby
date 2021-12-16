@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,12 +15,16 @@ import (
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/cmd"
 	"go-micro.dev/v4/errors"
+	"go-micro.dev/v4/util/log"
+	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
+	middlewareGin "wz2100.net/microlobby/shared/middleware/gin"
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
 
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
+	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 )
 
 const pkgPath = "wz2100.net/microlobby/http_proxy/web/proxy"
@@ -34,6 +39,7 @@ type Handler struct {
 	cRegistry        *component.Registry
 	registeredRoutes map[string]bool
 	routingengine    *gin.Engine
+	settings         map[string][]byte
 }
 
 // ConfigureRouter creates a new Handler and configures it on the router
@@ -42,19 +48,20 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 		cRegistry:        cregistry,
 		registeredRoutes: make(map[string]bool),
 		routingengine:    r,
+		settings:         make(map[string][]byte),
 	}
 
-	proxyAuthGroup := r.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
-	// proxyAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
-	// proxyAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
+	globalGroup := r.Group("")
+	globalGroup.Use(middlewareGin.UserSrvMiddleware(cregistry))
+
+	proxyAuthGroup := globalGroup.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
+	// proxyAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 	proxyAuthGroup.GET("/v1/health", h.getHealth)
 	proxyAuthGroup.GET("/v1/routes", h.getRoutes)
 
-	globalGroup := r.Group("")
 	globalAuthGroup := r.Group("")
-	// globalAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
-	// globalAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
+	// globalAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 	// Refresh routes for the proxy every 10 seconds
 	go func() {
@@ -76,8 +83,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 
 				serviceGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
 				serviceAuthGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
-				// serviceAuthGroup.Use(middlewaregin.UserSrvMiddleware(cregistry))
-				// serviceAuthGroup.Use(middlewaregin.RequireUserMiddleware(cregistry))
+				// serviceAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 				for _, route := range resp.Routes {
 					var g *gin.RouterGroup = nil
@@ -106,6 +112,128 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 			}
 
 			time.Sleep(10 * time.Second)
+		}
+	}()
+
+	go func() {
+		ctx := context.Background()
+		s, err := component.SettingsV1(cregistry)
+		if err != nil {
+			panic(err)
+		}
+
+		_, ok := h.settings[defs.SettingNameJWTRefreshTokenPub]
+		_, ok2 := h.settings[defs.SettingNameJWTRefreshTokenPriv]
+		if !ok || !ok2 {
+			spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPub)
+			spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPriv)
+			if epub != nil || epri != nil {
+				pubKey, privKey, err := ed25519.GenerateKey(nil)
+				if err != nil {
+					panic(err)
+				}
+
+				npri := privKey
+				npub := pubKey
+
+				spri, epri = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+					Service:     defs.ServiceHttpProxy,
+					Name:        defs.SettingNameJWTRefreshTokenPriv,
+					Content:     npri,
+					RolesRead:   []string{auth.ROLE_SUPERADMIN},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+				})
+				if epri != nil {
+					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
+						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
+							WithField("error", epri).
+							WithField("setting", defs.SettingNameJWTRefreshTokenPriv).
+							Error(epri)
+					} else {
+						log.Error(epri)
+					}
+					return
+				}
+
+				spub, epub = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+					Service:     defs.ServiceHttpProxy,
+					Name:        defs.SettingNameJWTRefreshTokenPub,
+					Content:     npub,
+					RolesRead:   []string{auth.ROLE_USER},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+				})
+				if epub != nil {
+					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
+						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
+							WithField("error", epub).
+							WithField("setting", defs.SettingNameJWTRefreshTokenPub).
+							Error(epub)
+					} else {
+						log.Error(epub)
+					}
+					return
+				}
+			}
+
+			h.settings[defs.SettingNameJWTRefreshTokenPub] = spub.Content
+			h.settings[defs.SettingNameJWTRefreshTokenPriv] = spri.Content
+		}
+
+		_, ok = h.settings[defs.SettingNameJWTAccessTokenPub]
+		_, ok2 = h.settings[defs.SettingNameJWTAccessTokenPriv]
+		if !ok || !ok2 {
+			spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPub)
+			spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPriv)
+			if epub != nil || epri != nil {
+				pubKey, privKey, err := ed25519.GenerateKey(nil)
+				if err != nil {
+					panic(err)
+				}
+
+				npri := privKey
+				npub := pubKey
+
+				spri, epri = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+					Service:     defs.ServiceHttpProxy,
+					Name:        defs.SettingNameJWTAccessTokenPriv,
+					Content:     npri,
+					RolesRead:   []string{auth.ROLE_SUPERADMIN},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+				})
+				if epri != nil {
+					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
+						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
+							WithField("error", epri).
+							WithField("setting", defs.SettingNameJWTAccessTokenPriv).
+							Error(epri)
+					} else {
+						log.Error(epri)
+					}
+					return
+				}
+
+				spub, epub = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+					Service:     defs.ServiceHttpProxy,
+					Name:        defs.SettingNameJWTAccessTokenPub,
+					Content:     npub,
+					RolesRead:   []string{auth.ROLE_USER},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+				})
+				if epub != nil {
+					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
+						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
+							WithField("error", epub).
+							WithField("setting", defs.SettingNameJWTAccessTokenPub).
+							Error(epub)
+					} else {
+						log.Error(epub)
+					}
+					return
+				}
+			}
+
+			h.settings[defs.SettingNameJWTAccessTokenPub] = spub.Content
+			h.settings[defs.SettingNameJWTAccessTokenPriv] = spri.Content
 		}
 	}()
 
@@ -220,7 +348,7 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 		var response json.RawMessage
 		err := (*cmd.DefaultOptions().Client).Call(ctx, req, &response)
 		if err != nil {
-			if cLogrus, lErr := component.Logrus(h.cRegistry); lErr != nil {
+			if cLogrus, lErr := component.Logrus(h.cRegistry); lErr == nil {
 				cLogrus.WithClassFunc(pkgPath, "Handler", "proxy").Error(err)
 			}
 

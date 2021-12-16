@@ -2,30 +2,30 @@
 
 MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserver-ng](https://github.com/Warzone2100/wzlobbyserver-ng).
 
+## Features
+
+- Requires only - leaves only "~/go" on the OS in podman mode:
+  - Podman/Docker
+  - docker-compose
+  - task
+- Everything in containers
+- Automated migrations, migrating on start
+- gRPC+Protobuf internal, JSON/XML external
+- Argon2-id Hashes
+- JWT Tokens
+- Integrated RBAC K/V store -> settings_v1
+- Loosely coupled Microservices
+- Fast to copy&paste a service, easy to start a new one
+- Event System as example for IRC/Discord bots
+- All communication over NATS. It scales!
+- No persistent Data, everything is stored in the DB's
+
 ## Basic Architecture
 
 It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Transport, Registry and Broker is done over NATS.
 
 The draw.io flowchart for the Architecture:
 ![Micro Service Architecture](/docs/micro-service-architecture.png)
-
-## Features
-
-- Requires only - leaves only "~/go" on the OS in podman mode.
-  - Podman/Docker
-  - docker-compose
-  - task
-
-- Everything in containers
-- Automated migrations, migrating on start
-- gRPC+Protobuf internal, JSON/XML external
-- Argon2-id Hashes
-- JWT Tokens
-- Loosely coupled Microservices
-- Fast to copy&paste a service, easy to start a new one
-- Event System as example for IRC/Discord bots
-- All communication over NATS. It scales!
-- No persistent Data, everything is stored in the DB's
 
 ## Services
 
@@ -42,7 +42,7 @@ Basic Key/Value Store with Permissions
 - Give Username + password and you get a JWT back.
 - Internaly converts a JWT to a user with roles.
 
-### Lobby Service
+### lobby/v1 Service
 
 Register a game, get list of games and unregister it.
 
@@ -104,6 +104,7 @@ task: Available tasks for this project:
 ## Authors
 
 René Jochum - rene@jochum.dev
+Pastdue (ideas)
 
 ## License
 

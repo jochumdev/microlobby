@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut())
+	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
 
 	service := micro.NewService(
 		micro.Name(defs.ServiceLobbyV1),

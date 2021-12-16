@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut())
+	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()

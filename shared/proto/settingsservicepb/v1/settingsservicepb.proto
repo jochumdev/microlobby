@@ -18,15 +18,15 @@ message CreateRequest {
     string ownerId = 2;
 
     string name = 3;
-    string content = 4;
+    bytes content = 4;
 
     repeated string rolesRead = 5;
-    repeated string rolesWrite = 6;
+    repeated string rolesUpdate = 6;
 }
 
 message UpdateRequest {
     string id = 1;
-    string content = 2;
+    bytes content = 2;
 }
 
 message GetRequest {
@@ -52,7 +52,7 @@ message Setting {
     string ownerId = 3;
 
     string name = 4;
-    string content = 5;
+    bytes content = 5;
 
     google.protobuf.Timestamp createdAt = 6;
     google.protobuf.Timestamp updatedAt = 7;

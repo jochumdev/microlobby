@@ -7,6 +7,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"go-micro.dev/v4/server"
+)
+
+// const pkgPath = "wz2100.net/microlobby/shared/component"
+
+var (
+	errorRetrievingRegistry = errors.New("retrieving registry")
+	errorRegistryIsNil      = errors.New("registry is nil")
 )
 
 type Component interface {
@@ -25,6 +33,8 @@ type LogrusComponent interface {
 	WithClassFunc(pkgPath, class, function string) *logrus.Entry
 }
 
+type RegistryKey struct{}
+
 type Registry struct {
 	components map[interface{}]Component
 
@@ -37,6 +47,28 @@ type HealthInfo struct {
 }
 
 type HealthInfoMap map[string]HealthInfo
+
+func RegistryMicroHdlWrapper(reg *Registry) func(server.HandlerFunc) server.HandlerFunc {
+	return func(in server.HandlerFunc) server.HandlerFunc {
+		return func(ctx context.Context, req server.Request, rsp interface{}) error {
+			ctx = context.WithValue(ctx, RegistryKey{}, reg)
+			return in(ctx, req, rsp)
+		}
+	}
+}
+
+func RegistryFromContext(ctx context.Context) (*Registry, error) {
+	reg, ok := ctx.Value(RegistryKey{}).(*Registry)
+	if !ok {
+		return nil, errorRetrievingRegistry
+	}
+
+	if reg == nil {
+		return nil, errorRegistryIsNil
+	}
+
+	return reg, nil
+}
 
 func NewRegistry(components ...Component) *Registry {
 	reg := &Registry{components: make(map[interface{}]Component)}

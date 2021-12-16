@@ -21,41 +21,44 @@ import (
 const pkgPath = "wz2100.net/microlobby/service/auth/v1"
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN())
+	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), component.NewSettingsV1())
 
 	service := micro.NewService(
 		micro.Name(defs.ServiceAuthV1),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
-		micro.WrapHandler(component.BunMicroHdlWrapper(registry)),
+		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),
 	)
 
 	routes := []*infoservicepb.RoutesReply_Route{
 		{
-			Method:      http.MethodGet,
-			Path:        "/user",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.UserList),
-			RequireRole: auth.ROLE_ADMIN,
-			Params:      []string{"limit", "offset"},
+			Method:          http.MethodGet,
+			Path:            "/user",
+			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserList),
+			RequireRole:     auth.ROLE_ADMIN,
+			Params:          []string{"limit", "offset"},
+			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 		},
 		{
-			Method:   http.MethodDelete,
-			Path:     "/user/:userId",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDelete),
-			Params:   []string{"userId"},
+			Method:          http.MethodDelete,
+			Path:            "/user/:userId",
+			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDelete),
+			Params:          []string{"userId"},
+			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 		},
 		{
-			Method:   http.MethodGet,
-			Path:     "/user/:userId",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDetail),
-			Params:   []string{"userId"},
+			Method:          http.MethodGet,
+			Path:            "/user/:userId",
+			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDetail),
+			Params:          []string{"userId"},
+			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 		},
 		{
-			Method:      http.MethodPut,
-			Path:        "/user/:userId/roles",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.UserUpdateRoles),
-			RequireRole: auth.ROLE_SUPERADMIN,
-			Params:      []string{"userId"},
+			Method:          http.MethodPut,
+			Path:            "/user/:userId/roles",
+			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserUpdateRoles),
+			IntersectsRoles: []string{auth.ROLE_SUPERADMIN},
+			Params:          []string{"userId"},
 		},
 		{
 			Method:   http.MethodPost,
@@ -64,37 +67,8 @@ func main() {
 		},
 		{
 			Method:   http.MethodPost,
-			Path:     "/logout",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Logout),
-		},
-		{
-			Method:   http.MethodPost,
 			Path:     "/register",
 			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Register),
-		},
-		{
-			Method:      http.MethodGet,
-			Path:        "/token",
-			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenList),
-			RequireRole: auth.ROLE_ADMIN,
-		},
-		{
-			Method:   http.MethodGet,
-			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenDetail),
-			Params:   []string{"token"},
-		},
-		{
-			Method:   http.MethodPut,
-			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenRefresh),
-			Params:   []string{"token"},
-		},
-		{
-			Method:   http.MethodDelete,
-			Path:     "/token/:token",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.TokenDelete),
-			Params:   []string{"token"},
 		},
 	}
 
@@ -114,7 +88,7 @@ func main() {
 			infoService := infoservice.NewHandler(registry, defs.ProxyURIAuth, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
-			authH, err := authService.NewHandler()
+			authH, err := authService.NewHandler(registry)
 			if err != nil {
 				logrus.WithFunc(pkgPath, "main").Fatal(err)
 				return err

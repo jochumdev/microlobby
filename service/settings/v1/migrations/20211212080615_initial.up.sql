@@ -1,5 +1,4 @@
 BEGIN;
-
 CREATE TABLE public.settings
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v1mc(),
@@ -8,7 +7,7 @@ CREATE TABLE public.settings
     service varchar(32) COLLATE pg_catalog."default",
     name varchar(32) COLLATE pg_catalog."default" NOT NULL,
 
-    content TEXT COLLATE pg_catalog."default" ,
+    content bytea,
 
     roles_read varchar(32)[] COLLATE pg_catalog."default",
     roles_update varchar(32)[] COLLATE pg_catalog."default",

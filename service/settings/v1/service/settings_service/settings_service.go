@@ -14,11 +14,35 @@ func NewHandler() (*Handler, error) {
 	return &Handler{}, nil
 }
 
+func (h *Handler) translateDBSettingToPB(dbs *db.Setting, out *settingsservicepb.Setting) {
+	out.Id = dbs.ID.String()
+	out.OwnerId = dbs.OwnerID.String()
+	out.Service = dbs.Service
+	out.Name = dbs.Name
+	out.Content = dbs.Content
+	out.CreatedAt = timestamppb.New(dbs.CreatedAt)
+	if !dbs.UpdatedAt.IsZero() {
+		out.UpdatedAt = timestamppb.New(dbs.UpdatedAt.Time)
+	}
+}
+
 func (h *Handler) Create(ctx context.Context, in *settingsservicepb.CreateRequest, out *settingsservicepb.Setting) error {
+	result, err := db.SettingsCreate(ctx, in)
+	if err != nil {
+		return err
+	}
+
+	h.translateDBSettingToPB(result, out)
 	return nil
 }
 
 func (h *Handler) Update(ctx context.Context, in *settingsservicepb.UpdateRequest, out *settingsservicepb.Setting) error {
+	result, err := db.SettingsUpdate(ctx, in.Id, in.Content)
+	if err != nil {
+		return err
+	}
+
+	h.translateDBSettingToPB(result, out)
 	return nil
 }
 
@@ -28,16 +52,7 @@ func (h *Handler) Get(ctx context.Context, in *settingsservicepb.GetRequest, out
 		return err
 	}
 
-	out.Id = result.ID.String()
-	out.OwnerId = result.OwnerID.String()
-	out.Service = result.Service
-	out.Name = result.Name
-	out.Content = result.Content
-	out.CreatedAt = timestamppb.New(result.CreatedAt)
-	if !result.UpdatedAt.IsZero() {
-		out.UpdatedAt = timestamppb.New(result.UpdatedAt.Time)
-	}
-
+	h.translateDBSettingToPB(result, out)
 	return nil
 }
 
@@ -49,17 +64,8 @@ func (h *Handler) List(ctx context.Context, in *settingsservicepb.ListRequest, o
 
 	// Copy the data to the result
 	for _, result := range results {
-		row := &settingsservicepb.Setting{
-			Id:        result.ID.String(),
-			OwnerId:   result.OwnerID.String(),
-			Service:   result.Service,
-			Name:      result.Name,
-			Content:   result.Content,
-			CreatedAt: timestamppb.New(result.CreatedAt),
-		}
-		if !result.UpdatedAt.IsZero() {
-			row.UpdatedAt = timestamppb.New(result.UpdatedAt.Time)
-		}
+		row := &settingsservicepb.Setting{}
+		h.translateDBSettingToPB(&result, row)
 		out.Data = append(out.Data, row)
 	}
 

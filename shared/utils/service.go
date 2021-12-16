@@ -3,9 +3,8 @@ package utils
 import (
 	"fmt"
 
-	"go-micro.dev/v4/config/cmd"
-
 	"github.com/avast/retry-go"
+	"go-micro.dev/v4/cmd"
 )
 
 func ServiceRetryGet(svcName string, attempts uint) (string, error) {

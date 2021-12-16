@@ -34,25 +34,4 @@ CREATE TABLE public.users_roles
 CREATE INDEX users_roles_user_id_idx ON users_roles (user_id);
 CREATE INDEX users_roles_role_id_idx ON users_roles (role_id);
 
-CREATE TABLE public.tokens
-(
-    id bigserial PRIMARY KEY,
-    user_id UUID NOT NULL,
-    token TEXT COLLATE pg_catalog."default" NOT NULL,
-
-    created_at TIMESTAMPTZ DEFAULT Now()
-);
-
-CREATE TABLE public.users_tokens
-(
-    user_id UUID NOT NULL,
-    token_id BIGINT NOT NULL,
-
-    UNIQUE(user_id, token_id),
-    FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE,
-    FOREIGN KEY(token_id) REFERENCES public.tokens(id) ON DELETE CASCADE
-);
-CREATE INDEX users_tokens_user_id_idx ON users_tokens (user_id);
-CREATE INDEX users_tokens_token_id_idx ON users_tokens (token_id);
-
 COMMIT;
