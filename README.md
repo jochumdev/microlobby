@@ -11,6 +11,13 @@ The draw.io flowchart for the Architecture:
 
 ## Features
 
+- Requires only - leaves only "~/go" on the OS in podman mode.
+  - Podman/Docker
+  - docker-compose
+  - task
+
+- Everything in containers
+- Automated migrations, migrating on start
 - gRPC+Protobuf internal, JSON/XML external
 - Argon2-id Hashes
 - JWT Tokens
