@@ -17,6 +17,7 @@ import (
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/userpb/v1"
+	"wz2100.net/microlobby/shared/utils"
 )
 
 type Config struct {
@@ -37,7 +38,7 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 	}
 
 	go func() {
-		ctx := context.Background()
+		ctx := utils.CtxForService(context.Background())
 		s, err := component.SettingsV1(cregistry)
 		if err != nil {
 			panic(err)
@@ -53,8 +54,8 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 
 			if err != nil {
 				c = &Config{
-					RefreshTokenExpiry: 900,        // 15 minutes
-					AccessTokenExpiry:  86400 * 14, // 14 days
+					RefreshTokenExpiry: 86400 * 14, // 14 days
+					AccessTokenExpiry:  900,        // 15 minutes
 				}
 				craw, err := json.Marshal(c)
 				if err != nil {
@@ -65,8 +66,8 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 					Service:     defs.ServiceAuthV1,
 					Name:        "config",
 					Content:     craw,
-					RolesRead:   []string{auth.ROLE_ADMIN},
-					RolesUpdate: []string{auth.ROLE_ADMIN},
+					RolesRead:   []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
+					RolesUpdate: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
 				})
 
 				if err != nil {
@@ -213,7 +214,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 
 	pRefreshKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPriv]
 	if !ok {
-		return errors.New("no sigingkey, can't generate the token, it's my fault")
+		return errors.New("no signingkey, can't generate the token, it's my fault")
 	}
 	pRefreshEDKey := ed25519.PrivateKey(pRefreshKey)
 
@@ -239,14 +240,14 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 
 	pAccessKey, ok := s.settings[defs.SettingNameJWTAccessTokenPriv]
 	if !ok {
-		return errors.New("no sigingkey, can't generate the token, it's my fault")
+		return errors.New("no signinkey, can't generate the token, it's my fault")
 	}
 	pAccessEDKey := ed25519.PrivateKey(pAccessKey)
 
 	// Create the Claims
 	accessClaims := &auth.JWTMicrolobbyClaims{
 		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: time.Now().Unix() + s.config.RefreshTokenExpiry,
+			ExpiresAt: time.Now().Unix() + s.config.AccessTokenExpiry,
 			IssuedAt:  time.Now().Unix(),
 			Issuer:    defs.ServiceAuthV1,
 			Id:        user.ID.String(),

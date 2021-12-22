@@ -8,6 +8,5 @@ message User {
     string id = 1;
     string username = 2;
     string email = 3;
-    string token = 4;
-    repeated string roles = 5;
+    repeated string roles = 4;
 }

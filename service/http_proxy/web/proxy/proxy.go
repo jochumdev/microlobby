@@ -55,13 +55,13 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	globalGroup.Use(middlewareGin.UserSrvMiddleware(cregistry))
 
 	proxyAuthGroup := globalGroup.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
-	// proxyAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
+	proxyAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 	proxyAuthGroup.GET("/v1/health", h.getHealth)
 	proxyAuthGroup.GET("/v1/routes", h.getRoutes)
 
-	globalAuthGroup := r.Group("")
-	// globalAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
+	globalAuthGroup := globalGroup.Group("")
+	globalAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 	// Refresh routes for the proxy every 10 seconds
 	go func() {
@@ -81,9 +81,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					continue
 				}
 
-				serviceGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
-				serviceAuthGroup := r.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
-				// serviceAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
+				serviceGroup := globalGroup.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
+				serviceAuthGroup := globalAuthGroup.Group(fmt.Sprintf("/%s/%s", resp.GetProxyURI(), resp.GetApiVersion()))
 
 				for _, route := range resp.Routes {
 					var g *gin.RouterGroup = nil
@@ -116,7 +115,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	}()
 
 	go func() {
-		ctx := context.Background()
+		ctx := utils.CtxForService(context.Background())
 		s, err := component.SettingsV1(cregistry)
 		if err != nil {
 			panic(err)
@@ -140,8 +139,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTRefreshTokenPriv,
 					Content:     npri,
-					RolesRead:   []string{auth.ROLE_SUPERADMIN},
-					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+					RolesRead:   []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 				})
 				if epri != nil {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
@@ -159,8 +158,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTRefreshTokenPub,
 					Content:     npub,
-					RolesRead:   []string{auth.ROLE_USER},
-					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+					RolesRead:   []string{auth.ROLE_USER, auth.ROLE_SERVICE},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 				})
 				if epub != nil {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
@@ -197,8 +196,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTAccessTokenPriv,
 					Content:     npri,
-					RolesRead:   []string{auth.ROLE_SUPERADMIN},
-					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+					RolesRead:   []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 				})
 				if epri != nil {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
@@ -216,8 +215,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTAccessTokenPub,
 					Content:     npub,
-					RolesRead:   []string{auth.ROLE_USER},
-					RolesUpdate: []string{auth.ROLE_SUPERADMIN},
+					RolesRead:   []string{auth.ROLE_USER, auth.ROLE_SERVICE},
+					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 				})
 				if epub != nil {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
@@ -243,36 +242,36 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Route) func(*gin.Context) {
 	return func(c *gin.Context) {
 		// Check if the user has the required role
-		// if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
-		// 	u, err := auth.UserFromGinContext(c)
-		// 	if err != nil {
-		// 		c.JSON(http.StatusInternalServerError, gin.H{
-		// 			"status":  http.StatusInternalServerError,
-		// 			"message": err,
-		// 		})
-		// 		return
-		// 	}
+		if len(route.RequireRole) > 0 || len(route.IntersectsRoles) > 0 {
+			u, err := middlewareGin.UserFromContext(c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  http.StatusInternalServerError,
+					"message": err,
+				})
+				return
+			}
 
-		// 	if len(route.RequireRole) > 0 {
-		// 		if !auth.HasRole(u, route.GetRequireRole()) {
-		// 			c.JSON(http.StatusForbidden, gin.H{
-		// 				"status":  http.StatusForbidden,
-		// 				"message": "You don't have the privileges to access this resource",
-		// 			})
-		// 			return
-		// 		}
-		// 	}
+			if len(route.RequireRole) > 0 {
+				if !auth.HasRole(u, route.GetRequireRole()) {
+					c.JSON(http.StatusForbidden, gin.H{
+						"status":  http.StatusForbidden,
+						"message": "You don't have the privileges to access this resource",
+					})
+					return
+				}
+			}
 
-		// 	if len(route.IntersectsRoles) > 0 {
-		// 		if !auth.IntersectsRoles(u, route.GetIntersectsRoles()...) {
-		// 			c.JSON(http.StatusForbidden, gin.H{
-		// 				"status":  http.StatusForbidden,
-		// 				"message": "You don't have the privileges to access this resource",
-		// 			})
-		// 			return
-		// 		}
-		// 	}
-		// }
+			if len(route.IntersectsRoles) > 0 {
+				if !auth.IntersectsRoles(u, route.GetIntersectsRoles()...) {
+					c.JSON(http.StatusForbidden, gin.H{
+						"status":  http.StatusForbidden,
+						"message": "You don't have the privileges to access this resource",
+					})
+					return
+				}
+			}
+		}
 
 		// Map query/path params
 		params := make(map[string]string)
@@ -342,7 +341,7 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 
 		req := (*cmd.DefaultOptions().Client).NewRequest(serviceName, route.GetEndpoint(), request, client.WithContentType("application/json"))
 
-		ctx := utils.RequestToContext(c, c.Request)
+		ctx := utils.CtxFromRequest(c, c.Request)
 
 		// remote call
 		var response json.RawMessage
@@ -369,6 +368,11 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 }
 
 func (h *Handler) getHealth(c *gin.Context) {
+	// Check permissions ( ROLE_ADMIN )
+	if ok := middlewareGin.ForceRole(c, auth.ROLE_ADMIN); !ok {
+		return
+	}
+
 	allFine := true
 
 	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, context.TODO())
@@ -415,6 +419,11 @@ func (h *Handler) getHealth(c *gin.Context) {
 }
 
 func (h *Handler) getRoutes(c *gin.Context) {
+	// Check permissions ( ROLE_ADMIN )
+	if ok := middlewareGin.ForceRole(c, auth.ROLE_ADMIN); !ok {
+		return
+	}
+
 	ginRoutes := h.routingengine.Routes()
 	rRoutes := []JSONRoute{}
 	for _, route := range ginRoutes {

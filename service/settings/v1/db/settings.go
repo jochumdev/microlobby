@@ -7,8 +7,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
+	"wz2100.net/microlobby/shared/utils"
 )
 
 type Setting struct {
@@ -25,11 +27,46 @@ type Setting struct {
 	SoftDelete
 }
 
-func (s *Setting) UserHasReadPermission(ctx context.Context) {
+func (s *Setting) UserHasReadPermission(ctx context.Context) bool {
+	user, err := utils.CtxMetadataUser(ctx)
+	if err != nil {
+		return false
+	}
 
+	if auth.HasRole(user, auth.ROLE_SUPERADMIN) {
+		return true
+	}
+
+	if user.Id == s.OwnerID.String() {
+		return true
+	}
+
+	if auth.IntersectsRoles(user, s.RolesRead...) {
+		return true
+	}
+
+	return false
 }
 
-func (s *Setting) UserHasWritePermission(ctx context.Context) {
+func (s *Setting) UserHasUpdatePermission(ctx context.Context) bool {
+	user, err := utils.CtxMetadataUser(ctx)
+	if err != nil {
+		return false
+	}
+
+	if auth.HasRole(user, auth.ROLE_SUPERADMIN) {
+		return true
+	}
+
+	if user.Id == s.OwnerID.String() {
+		return true
+	}
+
+	if auth.IntersectsRoles(user, s.RolesUpdate...) {
+		return true
+	}
+
+	return false
 }
 
 func SettingsCreate(ctx context.Context, in *settingsservicepb.CreateRequest) (*Setting, error) {
@@ -68,6 +105,10 @@ func SettingsUpdate(ctx context.Context, id string, content []byte) (*Setting, e
 	s, err := SettingsGet(ctx, id, "", "", "")
 	if err != nil {
 		return nil, err
+	}
+
+	if !s.UserHasUpdatePermission(ctx) {
+		return nil, errors.New("unauthorized")
 	}
 
 	s.Content = content
@@ -118,6 +159,10 @@ func SettingsGet(ctx context.Context, id, ownerID, service, name string) (*Setti
 		return nil, err
 	}
 
+	if !result.UserHasReadPermission(ctx) {
+		return nil, errors.New("unauthorized")
+	}
+
 	return &result, nil
 }
 
@@ -157,5 +202,12 @@ func SettingsList(ctx context.Context, id, ownerID, service, name string, limit,
 		return nil, err
 	}
 
-	return settings, nil
+	var result []Setting
+	for _, s := range settings {
+		if s.UserHasReadPermission(ctx) {
+			result = append(result, s)
+		}
+	}
+
+	return result, nil
 }
