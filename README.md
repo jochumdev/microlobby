@@ -4,16 +4,17 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 
 ## Features
 
-- Requires only - leaves only "~/go" on the OS in podman mode:
+- Requires only:
   - Podman/Docker
   - docker-compose
   - task
+- Leaves only "~/go" on the OS in podman mode
 - Everything in containers
 - Automated migrations, migrating on start
 - gRPC+Protobuf internal, JSON/XML external
 - Argon2-id Hashes
 - JWT Tokens
-- Integrated RBAC K/V store -> settings_v1
+- Integrated RBAC K/V store -> settings/v1
 - Loosely coupled Microservices
 - Fast to copy&paste a service, easy to start a new one
 - Event System as example for IRC/Discord bots
