@@ -144,6 +144,29 @@ func UserFindByUsername(ctx context.Context, username string) (*User, error) {
 	return &user, nil
 }
 
+func UserFindById(ctx context.Context, id string) (*User, error) {
+	// Get the database engine
+	bun, err := component.BunFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user := User{}
+	err = bun.NewSelect().
+		Model(&user).
+		ColumnExpr("u.*").
+		ColumnExpr("array(SELECT r.name FROM users_roles AS ur LEFT JOIN roles AS r ON ur.role_id = r.id WHERE ur.user_id = u.id) AS roles").
+		Limit(1).
+		Where("u.id = ?", id).
+		Scan(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func UserCreate(ctx context.Context, username, password string, roles []string) (*User, error) {
 	// Get the database engine
 	bun, err := component.BunFromContext(ctx)

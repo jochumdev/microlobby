@@ -91,6 +91,18 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 					"error": err,
 				}).
 				Error("validate token failed")
+			return
+		}
+
+		// Check claims (expiration)
+		if err = claims.Valid(); err != nil {
+			logrusc.WithFunc(pkgPath, "UserSrvMiddleware").
+				WithFields(logrus.Fields{
+					"error": err,
+				}).
+				Error("validate claims failed")
+			return
+
 		}
 
 		user := userpb.User{}

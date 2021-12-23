@@ -15,6 +15,7 @@ service AuthV1Service {
 
     rpc Register(RegisterRequest) returns (shared.userpb.v1.User) {}
     rpc Login(LoginRequest) returns (Token) {}
+    rpc Refresh(Token) returns (Token) {}
 }
 
 message ListRequest {

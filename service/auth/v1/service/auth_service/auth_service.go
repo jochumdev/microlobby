@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -198,23 +199,10 @@ func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterReques
 	return nil
 }
 
-func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *authservicepb.Token) error {
-	user, err := db.UserFindByUsername(ctx, in.Username)
-	if err != nil {
-		return err
-	}
-
-	ok, err := argon2.Verify(in.Password, user.Password)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New("http 403 - wrong username or password")
-	}
-
+func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservicepb.Token) error {
 	pRefreshKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPriv]
 	if !ok {
-		return errors.New("no signingkey, can't generate the token, it's my fault")
+		return errors.New("no signinkey, can't generate the refresh token, check again later")
 	}
 	pRefreshEDKey := ed25519.PrivateKey(pRefreshKey)
 
@@ -240,7 +228,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 
 	pAccessKey, ok := s.settings[defs.SettingNameJWTAccessTokenPriv]
 	if !ok {
-		return errors.New("no signinkey, can't generate the token, it's my fault")
+		return errors.New("no signinkey, can't generate the access token, check again later")
 	}
 	pAccessEDKey := ed25519.PrivateKey(pAccessKey)
 
@@ -271,4 +259,52 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 	out.AccessTokenExpiresAt = accessClaims.ExpiresAt
 
 	return nil
+}
+
+func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *authservicepb.Token) error {
+	user, err := db.UserFindByUsername(ctx, in.Username)
+	if err != nil {
+		return err
+	}
+
+	ok, err := argon2.Verify(in.Password, user.Password)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("http 403 - wrong username or password")
+	}
+
+	return s.genTokens(ctx, user, out)
+}
+
+func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *authservicepb.Token) error {
+	pRefreshPubKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPub]
+	if !ok {
+		return errors.New("no pubkey, can't check the refresh token, check again later")
+	}
+
+	claims := auth.JWTMicrolobbyClaims{}
+	_, err := jwt.ParseWithClaims(in.RefreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return ed25519.PublicKey(pRefreshPubKey), nil
+	})
+	if err != nil {
+		return fmt.Errorf("checking the RefreshToken: %s", err)
+	}
+
+	// Check claims (expiration)
+	if err = claims.Valid(); err != nil {
+		return fmt.Errorf("claims invalid: %s", err)
+	}
+
+	user, err := db.UserFindById(ctx, claims.Id)
+	if err != nil {
+		return fmt.Errorf("error fetching the user: %s", err)
+	}
+
+	return s.genTokens(ctx, user, out)
 }

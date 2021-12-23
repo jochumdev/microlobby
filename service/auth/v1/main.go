@@ -70,6 +70,11 @@ func main() {
 			Path:     "/register",
 			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Register),
 		},
+		{
+			Method:   http.MethodPost,
+			Path:     "/refresh",
+			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Refresh),
+		},
 	}
 
 	service.Init(
