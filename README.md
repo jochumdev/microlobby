@@ -8,7 +8,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
   - Podman/Docker
   - docker-compose
   - task
-- Leaves only "~/go" on the OS in podman mode
+- Leaves only "~/go" on the OS in podman mode, nothing in docker mode
 - Everything in containers
 - Automated migrations, migrating on start
 - gRPC+Protobuf internal, JSON/XML external
@@ -33,6 +33,14 @@ The draw.io flowchart for the Architecture:
 ### http_proxy
 
 A very simple Proxy to MicroServices. They have to register routes with it over the help of infoservice.
+
+It provides 3 routes, the result will be collected from all microservices:
+
+| METHOD | Route             | AUTH | Description           |
+| ------ | ----------------- | ---- | --------------------- |
+| GET    | /health           |  n   | Summary health        |
+| GET    | /proxy/v1/health  |  y   | Detailed health       |
+| GET    | /proxy/v1/routes  |  y   | List of all routes    |
 
 ### settings/v1 Service
 
@@ -84,28 +92,29 @@ task -l
 
 ```text
 task: Available tasks for this project:
-* build: 		Build all containers
-* build:tools: 		Build tools
-* buildup: 		Run this when you changed something
-* check:toolchain: 	Check if you have all tools installed
-* default: 		Build and run microlobby
-* down: 		Stopp all containers
-* download: 		Download go dependencies
-* service:auth_v1: 	Build and run/restart auth/v1, restart http_proxy
-* service:build: 	Build a specific service using env var "SERVICE"
-* service:buildrun: 	Build and run a service using env var "SERVICE"
-* service:http_proxy: 	Build and run/restart http_proxy
-* service:protoc: 	Generate shared protobuf files and those for a service
-* service:settings_v1: 	Build and run/restart settings/v1, restart http_proxy
-* sysctl: 		Run sysctl to allow <=80 ports
-* up: 			Run all containers
-* upgrade:deps: 	Update all go dependencies
+* build:                Build all containers
+* build:protoc:         Generate shared protobuf files and those for a service
+* build:tools:          Build tools
+* buildup:              Run this when you changed something
+* check:toolchain:      Check if you have all tools installed
+* default:              Build and run microlobby
+* down:                 Stopp all containers
+* download:             Download go dependencies
+* ps:                   Show running containers
+* service:auth_v1:      Build and run/restart auth/v1, restart http_proxy
+* service:build:        Build a specific service using env var "SERVICE"
+* service:buildrun:     Build and run a service using env var "SERVICE"
+* service:http_proxy:   Build and run/restart http_proxy
+* service:settings_v1:  Build and run/restart settings/v1, restart http_proxy
+* sysctl:               Run sysctl to allow <=80 ports
+* up:                   Run all containers
+* upgrade:deps:         Update all go dependencies
 ```
 
 ## Authors
 
-René Jochum - rene@jochum.dev
-Pastdue (ideas)
+- René Jochum - rene@jochum.dev
+- Pastdue (ideas)
 
 ## License
 
