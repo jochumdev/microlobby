@@ -79,7 +79,7 @@ To run this you have to do the following steps:
 git clone https://github.com/pcdummy/microlobby.git
 cd microlobby
 cp .env.sample .env
-make
+task
 ```
 
 Now enjoy the [health api](http://localhost:8080/health)
