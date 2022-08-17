@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/ptypes/empty"
-	"go-micro.dev/v4/cmd"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
@@ -17,10 +16,12 @@ import (
 
 // const pkgPath = "wz2100.net/microlobby/service_main/web"
 
-type Handler struct{}
+type Handler struct {
+	cRegistry *component.Registry
+}
 
 func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) {
-	h := &Handler{}
+	h := &Handler{cRegistry: cregistry}
 
 	r.GET("/health", h.getHealth)
 }
@@ -28,7 +29,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) {
 func (h *Handler) getHealth(c *gin.Context) {
 	allFine := true
 
-	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, c)
+	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", h.cRegistry.Service.Options().Registry, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  500,
@@ -42,7 +43,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	for _, s := range services {
 		foundServices = append(foundServices, s.Name)
 
-		client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
 		resp, err := client.Health(context.TODO(), &empty.Empty{})
 
 		if err != nil {

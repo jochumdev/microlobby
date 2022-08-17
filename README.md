@@ -68,8 +68,8 @@ Think it will never be implemented but be part of Profile Service which will be 
 ### Prerequesits
 
 - [Task](https://taskfile.dev/#/installation)
-- docker-compose 1.29+
 - podman/docker
+- docker-compose 1.29+
 
 ### Run
 

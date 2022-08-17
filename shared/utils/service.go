@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/avast/retry-go"
-	"go-micro.dev/v4/cmd"
+	"go-micro.dev/v4"
 )
 
-func ServiceRetryGet(svcName string, attempts uint) (string, error) {
-	r := (*cmd.DefaultOptions().Registry)
+func ServiceRetryGet(service micro.Service, svcName string, attempts uint) (string, error) {
+	r := service.Options().Registry
 
 	var (
 		hostAndPort string

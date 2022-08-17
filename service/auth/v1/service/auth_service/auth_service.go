@@ -39,7 +39,7 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 	}
 
 	go func() {
-		ctx := utils.CtxForService(context.Background())
+		ctx := component.RegistryToContext(utils.CtxForService(context.Background()), cregistry)
 		s, err := component.SettingsV1(cregistry)
 		if err != nil {
 			panic(err)
@@ -63,7 +63,7 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 					panic(err)
 				}
 
-				_, err = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+				_, err = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
 					Service:     defs.ServiceAuthV1,
 					Name:        "config",
 					Content:     craw,

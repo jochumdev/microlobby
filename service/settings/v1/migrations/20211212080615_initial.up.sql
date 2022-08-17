@@ -12,11 +12,11 @@ CREATE TABLE public.settings
     roles_read varchar(32)[] COLLATE pg_catalog."default",
     roles_update varchar(32)[] COLLATE pg_catalog."default",
 
-    created_at TIMESTAMPTZ DEFAULT Now(),
-    updated_at TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ,
-
-    UNIQUE(owner_id, service, name)
+    created_at TIMESTAMPTZ DEFAULT Now() NOT NULL,
+    updated_at TIMESTAMPTZ NULL,
+    deleted_at TIMESTAMPTZ NULL
 );
+
+CREATE UNIQUE INDEX osn_idx ON public.settings (owner_id, service, name) WHERE (deleted_at IS NULL);
 
 COMMIT;

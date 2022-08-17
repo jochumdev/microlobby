@@ -35,7 +35,7 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := component.RegistryToContext(context.Background(), registry)
 	s, err := component.SettingsV1(registry)
 	if err != nil {
 		logrusc.WithFunc(pkgPath, "UserSrvMiddleware").

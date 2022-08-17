@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/urfave/cli/v2"
-	"go-micro.dev/v4/cmd"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/utils"
@@ -49,6 +48,24 @@ func SettingsV1(reg *Registry) (*SettingsV1Handler, error) {
 	}
 
 	return result, nil
+}
+
+func sClientFromContext(context context.Context) (settingsservicepb.SettingsV1Service, error) {
+	// Get the micro client from the registry
+	reg, err := RegistryFromContext(context)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wait until the service is here
+	_, err = utils.ServiceRetryGet(reg.Service, defs.ServiceSettingsV1, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	service := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, reg.Service.Client())
+	return service, nil
+
 }
 
 // NewLog creates a new component
@@ -140,7 +157,11 @@ func (c *SettingsV1Handler) Get(ctx context.Context, id, ownerId, service, name 
 	}
 	c.cacheGetLock.RUnlock()
 
-	client := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, *cmd.DefaultOptions().Client)
+	client, err := sClientFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := client.Get(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", cacheKey, err)
@@ -189,14 +210,11 @@ func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name
 	}
 	c.cacheListLock.RUnlock()
 
-	// Wait until the service is here
-	_, err := utils.ServiceRetryGet(defs.ServiceSettingsV1, 10)
+	// Fetch
+	client, err := sClientFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Fetch
-	client := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, *cmd.DefaultOptions().Client)
 	result, err := client.List(ctx, req)
 	if err != nil {
 		return nil, err
@@ -211,44 +229,28 @@ func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name
 }
 
 func (c *SettingsV1Handler) Create(ctx context.Context, req *settingsservicepb.CreateRequest) (*settingsservicepb.Setting, error) {
-	// Wait until the service is here
-	_, err := utils.ServiceRetryGet(defs.ServiceSettingsV1, 10)
+	// Create
+	client, err := sClientFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Create
-	client := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, *cmd.DefaultOptions().Client)
 	return client.Create(ctx, req)
 }
 
 func (c *SettingsV1Handler) Update(ctx context.Context, req *settingsservicepb.UpdateRequest) (*settingsservicepb.Setting, error) {
-	// Wait until the service is here
-	_, err := utils.ServiceRetryGet(defs.ServiceSettingsV1, 10)
+	// Update
+	client, err := sClientFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Update
-	client := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, *cmd.DefaultOptions().Client)
 	return client.Update(ctx, req)
 }
 
-func (c *SettingsV1Handler) Upsert(ctx context.Context, req *settingsservicepb.CreateRequest) (*settingsservicepb.Setting, error) {
-	// Wait until the service is here
-	_, err := utils.ServiceRetryGet(defs.ServiceSettingsV1, 10)
+func (c *SettingsV1Handler) Upsert(ctx context.Context, req *settingsservicepb.UpsertRequest) (*settingsservicepb.Setting, error) {
+	// Upsert
+	client, err := sClientFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Upsert
-	client := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, *cmd.DefaultOptions().Client)
-	if s, err := c.Get(ctx, "", req.OwnerId, req.Service, req.Name); err == nil {
-		// Update
-		ureq := &settingsservicepb.UpdateRequest{Id: s.Id, Content: req.Content}
-		return client.Update(ctx, ureq)
-	}
-
-	// Create
-	return client.Create(ctx, req)
+	return client.Upsert(ctx, req)
 }

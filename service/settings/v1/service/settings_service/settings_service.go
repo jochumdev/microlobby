@@ -46,6 +46,16 @@ func (h *Handler) Update(ctx context.Context, in *settingsservicepb.UpdateReques
 	return nil
 }
 
+func (h *Handler) Upsert(ctx context.Context, in *settingsservicepb.UpsertRequest, out *settingsservicepb.Setting) error {
+	result, err := db.SettingsUpsert(ctx, in)
+	if err != nil {
+		return err
+	}
+
+	h.translateDBSettingToPB(result, out)
+	return nil
+}
+
 func (h *Handler) Get(ctx context.Context, in *settingsservicepb.GetRequest, out *settingsservicepb.Setting) error {
 	result, err := db.SettingsGet(ctx, in.Id, in.OwnerId, in.Service, in.Name)
 	if err != nil {

@@ -12,5 +12,5 @@ type Timestamps struct {
 }
 
 type SoftDelete struct {
-	DeletedAt bun.NullTime `bun:"deleted_at,soft_delete" json:"deleted_at" yaml:"deleted_at"`
+	DeletedAt bun.NullTime `bun:"deleted_at,soft_delete,nullzero" json:"deleted_at" yaml:"deleted_at"`
 }

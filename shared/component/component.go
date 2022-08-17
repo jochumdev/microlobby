@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"go-micro.dev/v4"
 	"go-micro.dev/v4/server"
 )
 
@@ -38,7 +39,8 @@ type RegistryKey struct{}
 type Registry struct {
 	components map[interface{}]Component
 
-	Logrus LogrusComponent
+	Service micro.Service
+	Logrus  LogrusComponent
 }
 
 type HealthInfo struct {
@@ -68,6 +70,10 @@ func RegistryFromContext(ctx context.Context) (*Registry, error) {
 	}
 
 	return reg, nil
+}
+
+func RegistryToContext(ctx context.Context, reg *Registry) context.Context {
+	return context.WithValue(ctx, RegistryKey{}, reg)
 }
 
 func NewRegistry(components ...Component) *Registry {

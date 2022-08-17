@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/client"
-	"go-micro.dev/v4/cmd"
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
 	"wz2100.net/microlobby/shared/auth"
@@ -68,13 +67,13 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 		ctx := context.Background()
 
 		for {
-			services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Routes", *cmd.DefaultOptions().Registry, ctx)
+			services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Routes", h.cRegistry.Service.Options().Registry, ctx)
 			if err != nil {
 				return
 			}
 
 			for _, s := range services {
-				client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+				client := infoservicepb.NewInfoService(s.Name, cregistry.Service.Client())
 				resp, err := client.Routes(ctx, &empty.Empty{})
 				if err != nil {
 					// failure in getting routes, silently ignore
@@ -135,7 +134,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				npri := privKey
 				npub := pubKey
 
-				spri, epri = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+				spri, epri = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTRefreshTokenPriv,
 					Content:     npri,
@@ -154,7 +153,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					return
 				}
 
-				spub, epub = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+				spub, epub = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTRefreshTokenPub,
 					Content:     npub,
@@ -192,7 +191,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				npri := privKey
 				npub := pubKey
 
-				spri, epri = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+				spri, epri = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTAccessTokenPriv,
 					Content:     npri,
@@ -211,7 +210,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					return
 				}
 
-				spub, epub = s.Upsert(ctx, &settingsservicepb.CreateRequest{
+				spub, epub = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
 					Service:     defs.ServiceHttpProxy,
 					Name:        defs.SettingNameJWTAccessTokenPub,
 					Content:     npub,
@@ -339,13 +338,13 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 			request[pn] = p
 		}
 
-		req := (*cmd.DefaultOptions().Client).NewRequest(serviceName, route.GetEndpoint(), request, client.WithContentType("application/json"))
+		req := h.cRegistry.Service.Client().NewRequest(serviceName, route.GetEndpoint(), request, client.WithContentType("application/json"))
 
 		ctx := utils.CtxFromRequest(c, c.Request)
 
 		// remote call
 		var response json.RawMessage
-		err := (*cmd.DefaultOptions().Client).Call(ctx, req, &response)
+		err := h.cRegistry.Service.Client().Call(ctx, req, &response)
 		if err != nil {
 			if cLogrus, lErr := component.Logrus(h.cRegistry); lErr == nil {
 				cLogrus.WithClassFunc(pkgPath, "Handler", "proxy").Error(err)
@@ -375,7 +374,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 
 	allFine := true
 
-	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", *cmd.DefaultOptions().Registry, context.TODO())
+	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", h.cRegistry.Service.Options().Registry, context.TODO())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -386,7 +385,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 
 	servicesStatus := gin.H{}
 	for _, s := range services {
-		client := infoservicepb.NewInfoService(s.Name, *cmd.DefaultOptions().Client)
+		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
 		resp, err := client.Health(c, &empty.Empty{})
 
 		if err != nil {

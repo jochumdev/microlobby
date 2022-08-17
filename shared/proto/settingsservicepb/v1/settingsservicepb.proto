@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 service SettingsV1Service {
     rpc Create(CreateRequest) returns (Setting) {}
     rpc Update(UpdateRequest) returns (Setting) {}
+    rpc Upsert(UpsertRequest) returns (Setting) {}
     rpc Get(GetRequest) returns (Setting) {}
     rpc List(ListRequest) returns (SettingsList) {}
 }
@@ -27,6 +28,18 @@ message CreateRequest {
 message UpdateRequest {
     string id = 1;
     bytes content = 2;
+}
+
+message UpsertRequest {
+    // Selectors
+    string id = 1;
+    string service = 2;
+    string name = 3;
+
+    // Upsert content
+    bytes content = 4;
+    repeated string rolesRead = 5;
+    repeated string rolesUpdate = 6;
 }
 
 message GetRequest {

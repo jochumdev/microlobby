@@ -15,7 +15,7 @@ import (
 
 type Setting struct {
 	bun.BaseModel `bun:"settings,alias:s"`
-	ID            uuid.UUID `bun:"id,type:uuid" json:"id" yaml:"id"`
+	ID            uuid.UUID `bun:"id,type:uuid,default:uuid_generate_v1mc()" json:"id" yaml:"id"`
 	OwnerID       uuid.UUID `bun:"owner_id,type:uuid" json:"owner_id" yaml:"owner_id"`
 	Service       string    `json:"service" yaml:"service"`
 	Name          string    `json:"name" yaml:"name"`
@@ -121,6 +121,27 @@ func SettingsUpdate(ctx context.Context, id string, content []byte) (*Setting, e
 	}
 
 	return s, nil
+}
+
+func SettingsUpsert(ctx context.Context, in *settingsservicepb.UpsertRequest) (*Setting, error) {
+	s, err := SettingsGet(ctx, in.Id, "", in.Service, in.Name)
+	if err == nil {
+		s, err = SettingsUpdate(ctx, s.ID.String(), in.Content)
+		if err != nil {
+			return nil, err
+		}
+
+		return s, nil
+	}
+
+	req := settingsservicepb.CreateRequest{}
+	req.Service = in.Service
+	req.Name = in.Name
+	req.Content = in.Content
+	req.RolesRead = in.RolesRead
+	req.RolesUpdate = in.RolesUpdate
+
+	return SettingsCreate(ctx, &req)
 }
 
 func SettingsGet(ctx context.Context, id, ownerID, service, name string) (*Setting, error) {

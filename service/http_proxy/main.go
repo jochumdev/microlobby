@@ -23,14 +23,15 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	service := microWeb.NewService(
+	webService := microWeb.NewService(
 		microWeb.Name(defs.ServiceHttpProxy),
 		microWeb.Version(version.Version),
 		microWeb.Handler(router),
 		microWeb.Flags(registry.Flags()...),
 	)
+	registry.Service = webService.Options().Service
 
-	if err := service.Init(microWeb.Action(func(c *cli.Context) {
+	if err := webService.Init(microWeb.Action(func(c *cli.Context) {
 		if err := registry.Init(c); err != nil {
 			log.Fatal(err)
 			return
@@ -51,7 +52,7 @@ func main() {
 	}
 
 	// Run server
-	if err := service.Run(); err != nil {
+	if err := webService.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

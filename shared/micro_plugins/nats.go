@@ -1,7 +1,7 @@
 package micro_plugins
 
 import (
-	_ "github.com/asim/go-micro/plugins/broker/nats/v4"
-	_ "github.com/asim/go-micro/plugins/registry/nats/v4"
-	_ "github.com/asim/go-micro/plugins/transport/nats/v4"
+	_ "github.com/go-micro/plugins/v4/broker/nats"
+	_ "github.com/go-micro/plugins/v4/registry/nats"
+	_ "github.com/go-micro/plugins/v4/transport/nats"
 )
