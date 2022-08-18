@@ -37,9 +37,8 @@ CREATE TABLE public.users_roles
 CREATE INDEX user_id_idx ON users_roles (user_id);
 CREATE INDEX role_id_idx ON users_roles (role_id);
 
-INSERT INTO roles (name) VALUES ('service');
-INSERT INTO roles (name) VALUES ('user');
-INSERT INTO roles (name) VALUES ('admin');
-INSERT INTO roles (name) VALUES ('superadmin');
+INSERT INTO roles (name) VALUES ('service'), ('user'), ('admin'), ('superadmin');
 
+INSERT INTO users (id, username, password, email) VALUES ('2e4d8ed5-934d-4cd2-84fb-bd650d3a1ded', 'admin', '$argon2id$v=19$m=131072,t=4,p=4$sMaZvvQn2uWrISQICSbBqQ$L9tNlTTs4ldx0Ry+8Ctu8trSN27Q5iY68iWLjtprOfY', 'admin@wz2100.net');
+INSERT INTO users_roles (user_id, role_id) VALUES ('2e4d8ed5-934d-4cd2-84fb-bd650d3a1ded', 2), ('2e4d8ed5-934d-4cd2-84fb-bd650d3a1ded', 3), ('2e4d8ed5-934d-4cd2-84fb-bd650d3a1ded', 4);
 COMMIT;

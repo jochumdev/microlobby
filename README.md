@@ -55,14 +55,6 @@ Basic Key/Value Store with Permissions
 
 Register a game, get list of games and unregister it.
 
-### EMail Service
-
-Sends E-Mails for us.
-
-### OAuth Service
-
-Think it will never be implemented but be part of Profile Service which will be added later.
-
 ## Development
 
 ### Prerequesits
@@ -83,6 +75,21 @@ task
 ```
 
 Now enjoy the [health api](http://localhost:8080/health)
+
+### Testing the API
+
+- Get a token:
+
+```bash
+source ./token_login.sh admin asdf1234
+echo $ACCESS_TOKEN
+```
+
+- Check the proxy health api
+
+```bash
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/health
+```
 
 ## Authors
 
