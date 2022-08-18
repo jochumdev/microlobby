@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/service/auth/v1/db"
 	"wz2100.net/microlobby/shared/argon2"
 	"wz2100.net/microlobby/shared/auth"
@@ -157,7 +157,7 @@ func (s *Handler) UserDetail(ctx context.Context, in *authservicepb.UserIDReques
 	return nil
 }
 
-func (s *Handler) UserDelete(ctx context.Context, in *authservicepb.UserIDRequest, out *empty.Empty) error {
+func (s *Handler) UserDelete(ctx context.Context, in *authservicepb.UserIDRequest, out *emptypb.Empty) error {
 	err := db.UserDelete(ctx, in.UserId)
 	if err != nil {
 		return err

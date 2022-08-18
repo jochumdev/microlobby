@@ -3,7 +3,7 @@ package infoservice
 import (
 	"context"
 
-	empty "github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
@@ -22,7 +22,7 @@ func NewHandler(comRegistry *component.Registry, proxyURI, apiVersion string, ro
 }
 
 // Health returns information about the health of this service.
-func (h *Handler) Health(ctx context.Context, req *empty.Empty, rsp *infoservicepb.HealthReply) error {
+func (h *Handler) Health(ctx context.Context, req *emptypb.Empty, rsp *infoservicepb.HealthReply) error {
 	healthMap := h.comRegistry.Health(ctx)
 
 	hasError := false
@@ -45,7 +45,7 @@ func (h *Handler) Health(ctx context.Context, req *empty.Empty, rsp *infoservice
 }
 
 // Routes returns the registered routes
-func (h *Handler) Routes(ctx context.Context, req *empty.Empty, rsp *infoservicepb.RoutesReply) error {
+func (h *Handler) Routes(ctx context.Context, req *emptypb.Empty, rsp *infoservicepb.RoutesReply) error {
 	rsp.ProxyURI = h.proxyURI
 	rsp.ApiVersion = h.apiVersion
 	rsp.Routes = h.routes

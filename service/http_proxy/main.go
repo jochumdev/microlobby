@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 
+	"go-micro.dev/v4"
+	"go-micro.dev/v4/client"
 	microWeb "go-micro.dev/v4/web"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +29,7 @@ func main() {
 		microWeb.Name(defs.ServiceHttpProxy),
 		microWeb.Version(version.Version),
 		microWeb.Handler(router),
+		microWeb.MicroService(micro.NewService(micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))))),
 		microWeb.Flags(registry.Flags()...),
 	)
 	registry.Service = webService.Options().Service

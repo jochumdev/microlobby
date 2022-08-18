@@ -1,7 +1,7 @@
 BEGIN;
 CREATE TABLE public.settings
 (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v1mc(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     owner_id UUID,
     service varchar(32) COLLATE pg_catalog."default",

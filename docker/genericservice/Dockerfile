@@ -17,7 +17,7 @@ COPY ./service/${SERVICE} /microlobby/service/${SERVICE}
 
 WORKDIR /microlobby/service/${SERVICE}
 
-RUN go mod download
+# RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -ldflags="-w -s" -o /usr/local/bin/microservice
 

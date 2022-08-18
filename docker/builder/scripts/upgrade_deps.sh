@@ -2,7 +2,7 @@
 set -ex
 
 cd /microlobby;
-go mod tidy -go=1.16 && go mod tidy -go=1.17
+go mod tidy -go=1.18
 
 for svc in $1; do
     cd /microlobby/service/${svc}

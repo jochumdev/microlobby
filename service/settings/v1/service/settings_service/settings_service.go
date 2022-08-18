@@ -3,6 +3,7 @@ package settingsService
 import (
 	"context"
 
+	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"wz2100.net/microlobby/service/settings/v1/db"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
@@ -37,7 +38,7 @@ func (h *Handler) Create(ctx context.Context, in *settingsservicepb.CreateReques
 }
 
 func (h *Handler) Update(ctx context.Context, in *settingsservicepb.UpdateRequest, out *settingsservicepb.Setting) error {
-	result, err := db.SettingsUpdate(ctx, in.Id, in.Content)
+	result, err := db.SettingsUpdate(ctx, in.Id, "", "", "", in.Content)
 	if err != nil {
 		return err
 	}
@@ -53,6 +54,7 @@ func (h *Handler) Upsert(ctx context.Context, in *settingsservicepb.UpsertReques
 	}
 
 	h.translateDBSettingToPB(result, out)
+	log.Error(out.String())
 	return nil
 }
 

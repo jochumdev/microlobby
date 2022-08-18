@@ -33,13 +33,14 @@ message UpdateRequest {
 message UpsertRequest {
     // Selectors
     string id = 1;
-    string service = 2;
-    string name = 3;
+    string ownerId = 2; // For the Update Selector only
+    string service = 3;
+    string name = 4;
 
     // Upsert content
-    bytes content = 4;
-    repeated string rolesRead = 5;
-    repeated string rolesUpdate = 6;
+    bytes content = 5;
+    repeated string rolesRead = 6;
+    repeated string rolesUpdate = 7;
 }
 
 message GetRequest {

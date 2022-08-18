@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/ptypes/empty"
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
@@ -74,7 +74,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 
 			for _, s := range services {
 				client := infoservicepb.NewInfoService(s.Name, cregistry.Service.Client())
-				resp, err := client.Routes(ctx, &empty.Empty{})
+				resp, err := client.Routes(ctx, &emptypb.Empty{})
 				if err != nil {
 					// failure in getting routes, silently ignore
 					continue
@@ -114,7 +114,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	}()
 
 	go func() {
-		ctx := utils.CtxForService(context.Background())
+		ctx := component.RegistryToContext(utils.CtxForService(context.Background()), cregistry)
 		s, err := component.SettingsV1(cregistry)
 		if err != nil {
 			panic(err)
@@ -386,7 +386,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	servicesStatus := gin.H{}
 	for _, s := range services {
 		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
-		resp, err := client.Health(c, &empty.Empty{})
+		resp, err := client.Health(c, &emptypb.Empty{})
 
 		if err != nil {
 			allFine = false

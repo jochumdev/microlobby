@@ -6,6 +6,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../minadmin3"
 		}
 	]
 }

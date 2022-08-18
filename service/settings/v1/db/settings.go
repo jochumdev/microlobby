@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"go-micro.dev/v4/util/log"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
@@ -15,7 +16,7 @@ import (
 
 type Setting struct {
 	bun.BaseModel `bun:"settings,alias:s"`
-	ID            uuid.UUID `bun:"id,type:uuid,default:uuid_generate_v1mc()" json:"id" yaml:"id"`
+	ID            uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()" json:"id" yaml:"id"`
 	OwnerID       uuid.UUID `bun:"owner_id,type:uuid" json:"owner_id" yaml:"owner_id"`
 	Service       string    `json:"service" yaml:"service"`
 	Name          string    `json:"name" yaml:"name"`
@@ -30,6 +31,7 @@ type Setting struct {
 func (s *Setting) UserHasReadPermission(ctx context.Context) bool {
 	user, err := utils.CtxMetadataUser(ctx)
 	if err != nil {
+		log.Error(err)
 		return false
 	}
 
@@ -94,7 +96,7 @@ func SettingsCreate(ctx context.Context, in *settingsservicepb.CreateRequest) (*
 	return &result, nil
 }
 
-func SettingsUpdate(ctx context.Context, id string, content []byte) (*Setting, error) {
+func SettingsUpdate(ctx context.Context, id, ownerID, service, name string, content []byte) (*Setting, error) {
 	// Get the database engine
 	bun, err := component.BunFromContext(ctx)
 	if err != nil {
@@ -102,7 +104,7 @@ func SettingsUpdate(ctx context.Context, id string, content []byte) (*Setting, e
 	}
 
 	// Fetch current setting
-	s, err := SettingsGet(ctx, id, "", "", "")
+	s, err := SettingsGet(ctx, id, ownerID, service, name)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +126,8 @@ func SettingsUpdate(ctx context.Context, id string, content []byte) (*Setting, e
 }
 
 func SettingsUpsert(ctx context.Context, in *settingsservicepb.UpsertRequest) (*Setting, error) {
-	s, err := SettingsGet(ctx, in.Id, "", in.Service, in.Name)
+	s, err := SettingsUpdate(ctx, "", in.OwnerId, in.Service, in.Name, in.Content)
 	if err == nil {
-		s, err = SettingsUpdate(ctx, s.ID.String(), in.Content)
-		if err != nil {
-			return nil, err
-		}
-
 		return s, nil
 	}
 

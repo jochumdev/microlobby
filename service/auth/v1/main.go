@@ -6,6 +6,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
+	"go-micro.dev/v4/client"
 	authService "wz2100.net/microlobby/service/auth/v1/service/auth_service"
 	"wz2100.net/microlobby/service/auth/v1/version"
 	"wz2100.net/microlobby/shared/auth"
@@ -25,6 +26,7 @@ func main() {
 
 	service := micro.NewService(
 		micro.Name(defs.ServiceAuthV1),
+		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),

@@ -41,7 +41,7 @@ services:
       - app
 
   http_proxy:
-    restart: unless-stopped
+    # restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
@@ -50,8 +50,7 @@ services:
     image: microlobby-service-http_proxy:latest
     environment:
       - MICRO_SERVER_ADDRESS=0.0.0.0:8080
-      - MICRO_TRANSPORT=nats
-      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_TRANSPORT=grpc
       - MICRO_REGISTRY=nats
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
@@ -61,12 +60,11 @@ services:
       - 8080:8080
     depends_on:
       - nats
-      - postgresd
     profiles:
       - app
 
   lobby_v1:
-    restart: unless-stopped
+    # restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
@@ -74,8 +72,7 @@ services:
         SERVICE: lobby/v1
     image: microlobby-service-lobby-v1:latest
     environment:
-      - MICRO_TRANSPORT=nats
-      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_TRANSPORT=grpc
       - MICRO_REGISTRY=nats
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
@@ -88,7 +85,7 @@ services:
       - app
 
   auth_v1:
-    restart: unless-stopped
+    # restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
@@ -96,15 +93,14 @@ services:
         SERVICE: auth/v1
     image: microlobby-service-auth-v1:latest
     environment:
-      - MICRO_TRANSPORT=nats
-      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_TRANSPORT=grpc
       - MICRO_REGISTRY=nats
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
+      - LOG_LEVEL=${LOG_LEVEL}
       - DATABASE_DEBUG=true
       - DATABASE_URL=${ML_AUTH_DB_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
     depends_on:
       - nats
       - postgresd
@@ -112,7 +108,7 @@ services:
       - app
 
   settings_v1:
-    restart: unless-stopped
+    # restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
@@ -120,15 +116,14 @@ services:
         SERVICE: settings/v1
     image: microlobby-service-settings-v1:latest
     environment:
-      - MICRO_TRANSPORT=nats
-      - MICRO_TRANSPORT_ADDRESS=nats:4222
+      - MICRO_TRANSPORT=grpc
       - MICRO_REGISTRY=nats
       - MICRO_REGISTRY_ADDRESS=nats:4222
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
+      - LOG_LEVEL=${LOG_LEVEL}
       - DATABASE_DEBUG=true
       - DATABASE_URL=${ML_SETTINGS_DB_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
     depends_on:
       - nats
       - postgresd

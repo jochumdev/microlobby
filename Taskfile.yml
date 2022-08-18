@@ -57,12 +57,14 @@ tasks:
       # Run with podman
       test -z "{{.CMD_PODMAN}}" && exit 0
       test -f "{{.GOPATH}}/bin/protoc-gen-micro" && exit 0
-      podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install go-micro.dev/v4/cmd/protoc-gen-micro@v4 || exit 1
+      podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 || exit 1
+      podman run --rm -v "{{.GOPATH}}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install github.com/go-micro/generator/cmd/protoc-gen-micro || exit 1
     - | 
       # Run with docker
       test -n "{{.CMD_PODMAN}}" && exit 0
       test -f "{{.GOPATH}}/bin/protoc-gen-micro" && exit 0
-      docker-compose --profile tools run --rm builder go install go-micro.dev/v4/cmd/protoc-gen-micro@v4
+      docker-compose --profile tools run --rm builder go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+      docker-compose --profile tools run --rm builder go install github.com/go-micro/generator/cmd/protoc-gen-micro
 
   build:tools:
     desc: Build tools
@@ -204,3 +206,13 @@ tasks:
       - test -n "{{.CMD_PODMAN}}" -o -n "{{.CMD_DOCKER}}"
       - test -n "{{.CMD_DCOMPOSE}}"
       - test ! -d "{{.GOPATH}}" && mkdir "{{.GOPATH}}" || exit 0
+
+  dev:auth-v1:
+    desc: Develop service/auth-v1
+    cmds:
+      - |
+        # Run with podman
+        test -n "{{.CMD_PODMAN}}" && \
+        podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-service-auth-v1:latest --build-arg=SERVICE=auth/v1 -f docker/genericservice/Dockerfile .
+      - task: up
+      - docker-compose logs -f auth_v1

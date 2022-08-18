@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
@@ -44,7 +44,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 		foundServices = append(foundServices, s.Name)
 
 		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
-		resp, err := client.Health(context.TODO(), &empty.Empty{})
+		resp, err := client.Health(context.TODO(), &emptypb.Empty{})
 
 		if err != nil {
 			allFine = false

@@ -41,7 +41,7 @@ func CtxMetadataUser(ctx context.Context) (*userpb.User, error) {
 	}
 
 	data, ok := md.Get("user")
-	if !ok {
+	if !ok || len(data) < 1 {
 		return nil, errors.New("no user in context")
 	}
 
@@ -68,5 +68,5 @@ func CtxForService(ctx context.Context) context.Context {
 		md["user"] = string(jsonb)
 	}
 
-	return metadata.NewContext(ctx, md)
+	return metadata.MergeContext(ctx, md, true)
 }

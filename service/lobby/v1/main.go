@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
+	"go-micro.dev/v4/client"
 	"wz2100.net/microlobby/service/lobby/v1/version"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
@@ -18,6 +19,7 @@ func main() {
 
 	service := micro.NewService(
 		micro.Name(defs.ServiceLobbyV1),
+		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 	)
