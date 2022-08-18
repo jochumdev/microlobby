@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/gin-gonic/gin v1.8.1
-	github.com/go-micro/plugins/v4/broker/grpc v1.1.0
 	github.com/go-micro/plugins/v4/transport/grpc v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jackc/pgx v3.6.2+incompatible
@@ -89,7 +88,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-micro/plugins/v4/broker/nats v1.1.0
 	github.com/go-micro/plugins/v4/registry/nats v1.1.0
-	github.com/go-micro/plugins/v4/transport/nats v1.1.0
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.2 // indirect

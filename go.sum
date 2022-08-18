@@ -471,7 +471,6 @@ github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vbaY=
 github.com/go-latex/latex v0.0.0-20210118124228-b3d85cf34e07/go.mod h1:CO1AlKB2CSIqUrmQPqA0gdRIlnLEY0gK5JGjh37zN5U=
-github.com/go-log/log v0.2.0 h1:z8i91GBudxD5L3RmF0KVpetCbcGWAV7q1Tw1eRwQM9Q=
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
@@ -483,16 +482,12 @@ github.com/go-logr/logr v1.2.1/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbV
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/stdr v1.2.0/go.mod h1:YkVgnZu1ZjjL7xTxrfm/LLZBfkhTqSR1ydtm6jTKKwI=
 github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
-github.com/go-micro/plugins/v4/broker/grpc v1.1.0 h1:P9njQtwltbvB4RFl7EdLpqJMY+PeJJuRVt1WtoKQXdw=
-github.com/go-micro/plugins/v4/broker/grpc v1.1.0/go.mod h1:Pz5kSFr/0Ht8FOgs5MJe7O8QWg67Dg9i+Lu0pp5LVkU=
 github.com/go-micro/plugins/v4/broker/nats v1.1.0 h1:JCo2JksH0M6HC8q8L+x9QCqGRr5M0BADQw2Q50TWCas=
 github.com/go-micro/plugins/v4/broker/nats v1.1.0/go.mod h1:qfrgRHN39JMwkml/50LD2zWkHoEAROX5kNJd12Nll9c=
 github.com/go-micro/plugins/v4/registry/nats v1.1.0 h1:oqQzP5P2FkfoYZiBRuCWsKqh4BCJG6MQkxYmLw2lNrU=
 github.com/go-micro/plugins/v4/registry/nats v1.1.0/go.mod h1:4tTfa958PiYUOZNBBNoY1awmgfxFcqQOmix8cR3UM+E=
 github.com/go-micro/plugins/v4/transport/grpc v1.1.0 h1:mXfDYfFQLnVDzjGY3o84oe4prfux9h8txsnA19dKsj8=
 github.com/go-micro/plugins/v4/transport/grpc v1.1.0/go.mod h1:J5xMp70xXZzm8yafICrDrWaUDd8Gwy8vt0xif7NcOPg=
-github.com/go-micro/plugins/v4/transport/nats v1.1.0 h1:04Gd/EcvqMydLXe/LmfWey2fYfkbZumG7as4ocdU2r4=
-github.com/go-micro/plugins/v4/transport/nats v1.1.0/go.mod h1:tCqq6Nvda4DACDdfuKoY36P2FUGaMvQFMcSScXv1//A=
 github.com/go-openapi/jsonpointer v0.0.0-20160704185906-46af16f9f7b1/go.mod h1:+35s3my2LFTysnkMfxsJBAMHj/DoqoB9knIWoYG/Vk0=
 github.com/go-openapi/jsonpointer v0.19.2/go.mod h1:3akKfEdA7DF1sugOqz1dVQHBcuDBPKZGEoHC/NkiQRg=
 github.com/go-openapi/jsonpointer v0.19.3/go.mod h1:Pl9vOtqEWErmShwVjC8pYs9cog34VGT37dQOVbmoatg=

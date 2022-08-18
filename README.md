@@ -23,7 +23,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 
 ## Basic Architecture
 
-It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Transport, Registry and Broker is done over NATS.
+It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Registry and Broker is done over NATS, Transport over gRPC.
 
 The draw.io flowchart for the Architecture:
 ![Micro Service Architecture](/docs/micro-service-architecture.png)
