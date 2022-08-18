@@ -11,10 +11,10 @@ import (
 
 type User struct {
 	bun.BaseModel `bun:"users,alias:u"`
-	ID            uuid.UUID `bun:"id,type:uuid" json:"id" yaml:"id"`
-	Username      string    `json:"username" yaml:"username"`
-	Password      string    `json:"-" yaml:"-"`
-	Email         string    `json:"email" yaml:"email"`
+	ID            uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()" json:"id" yaml:"id"`
+	Username      string    `bun:"username" json:"username" yaml:"username"`
+	Password      string    `bun:"password" json:"-" yaml:"-"`
+	Email         string    `bun:"email" json:"email" yaml:"email"`
 	Roles         []string  `bun:",array,scanonly" json:"roles" yaml:"roles"`
 
 	Timestamps
@@ -134,7 +134,7 @@ func UserFindByUsername(ctx context.Context, username string) (*User, error) {
 		ColumnExpr("u.*").
 		ColumnExpr("array(SELECT r.name FROM users_roles AS ur LEFT JOIN roles AS r ON ur.role_id = r.id WHERE ur.user_id = u.id) AS roles").
 		Limit(1).
-		Where("username = ?", username).
+		Where("u.username = ?", username).
 		Scan(ctx)
 
 	if err != nil {
@@ -186,6 +186,9 @@ func UserCreate(ctx context.Context, username, password string, roles []string) 
 	// Create roles
 	_, err = UserUpdateRoles(ctx, user.ID.String(), roles)
 	if err != nil {
+		if len(user.ID.String()) > 0 {
+			UserDelete(ctx, user.ID.String())
+		}
 		return nil, err
 	}
 

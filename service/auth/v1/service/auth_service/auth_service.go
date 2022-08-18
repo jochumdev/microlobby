@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/service/auth/v1/db"
 	"wz2100.net/microlobby/shared/argon2"
@@ -264,7 +265,8 @@ func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservice
 func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *authservicepb.Token) error {
 	user, err := db.UserFindByUsername(ctx, in.Username)
 	if err != nil {
-		return err
+		log.Error(err)
+		return errors.New("http 403 - wrong username or password")
 	}
 
 	ok, err := argon2.Verify(in.Password, user.Password)
