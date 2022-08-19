@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	authService "wz2100.net/microlobby/service/auth/v1/service/auth_service"
+	authSvc "wz2100.net/microlobby/service/auth/v1/service/auth"
 	"wz2100.net/microlobby/service/auth/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
@@ -19,8 +19,6 @@ import (
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
 )
-
-const pkgPath = "wz2100.net/microlobby/service/auth/v1"
 
 func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), component.NewSettingsV1())
@@ -108,9 +106,9 @@ func main() {
 			infoService := infoservice.NewHandler(registry, defs.ProxyURIAuth, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
-			authH, err := authService.NewHandler(registry)
+			authH, err := authSvc.NewHandler(registry)
 			if err != nil {
-				logrus.WithFunc(pkgPath, "main").Fatal(err)
+				logrus.WithFunc(version.PkgPath, "main").Fatal(err)
 				return err
 			}
 			authservicepb.RegisterAuthV1ServiceHandler(s, authH)

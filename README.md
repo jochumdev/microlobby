@@ -19,7 +19,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 - Fast to copy&paste a service, easy to start a new one
 - Event System as example for IRC/Discord bots
 - All communication over NATS. It scales!
-- No persistent Data, everything is stored in the DB's
+- Scale your db and everything else scales easy as it needs no Filesystem
 
 ## Basic Architecture
 

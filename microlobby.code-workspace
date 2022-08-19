@@ -6,6 +6,15 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../wzlobbyserver-ng"
+		},
+		{
+			"path": "../go-micro/examples"
+		},
+		{
+			"path": "../go-micro/plugins"
 		}
 	]
 }
