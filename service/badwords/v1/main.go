@@ -50,15 +50,19 @@ func main() {
 			IntersectsRoles: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
 		},
 	}
+
+	authH, err := authSvc.NewHandler(registry)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	bwH, err := bwSvc.NewHandler(registry)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	service.Init(
 		micro.Action(func(c *cli.Context) error {
 			if err := registry.Init(c); err != nil {
-				return err
-			}
-
-			logrus, err := component.Logrus(registry)
-			if err != nil {
-				log.Fatal(err)
 				return err
 			}
 
@@ -66,17 +70,13 @@ func main() {
 			infoService := infoservice.NewHandler(registry, defs.ProxyURIBadwords, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
-			authH, err := authSvc.NewHandler(registry)
-			if err != nil {
-				logrus.WithFunc(pkgPath, "main").Fatal(err)
-				return err
+			if err := authH.Start(); err != nil {
+				log.Fatalln(err)
 			}
 			authservicepb.RegisterAuthV1PreServiceHandler(s, authH)
 
-			bwH, err := bwSvc.NewHandler(registry)
-			if err != nil {
-				logrus.WithFunc(pkgPath, "main").Fatal(err)
-				return err
+			if err := bwH.Start(); err != nil {
+				log.Fatalln(err)
 			}
 			badwordspb.RegisterBadwordsV1ServiceHandler(s, bwH)
 
@@ -85,6 +85,13 @@ func main() {
 	)
 
 	if err := service.Run(); err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := authH.Stop(); err != nil {
+		log.Fatalln(err)
+	}
+	if err := bwH.Stop(); err != nil {
 		log.Fatalln(err)
 	}
 }

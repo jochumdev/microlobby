@@ -84,6 +84,11 @@ func main() {
 		},
 	}
 
+	authH, err := authSvc.NewHandler(registry)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	service.Init(
 		micro.WrapHandler(
 			serviceregistry.NewHandlerWrapper(
@@ -96,20 +101,12 @@ func main() {
 				return err
 			}
 
-			logrus, err := component.Logrus(registry)
-			if err != nil {
-				log.Fatal(err)
-				return err
-			}
-
 			s := service.Server()
 			infoService := infoservice.NewHandler(registry, defs.ProxyURIAuth, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
-			authH, err := authSvc.NewHandler(registry)
-			if err != nil {
-				logrus.WithFunc(version.PkgPath, "main").Fatal(err)
-				return err
+			if err := authH.Start(); err != nil {
+				log.Fatalln(err)
 			}
 			authservicepb.RegisterAuthV1ServiceHandler(s, authH)
 
@@ -118,6 +115,10 @@ func main() {
 	)
 
 	if err := service.Run(); err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := authH.Stop(); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -37,26 +37,29 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 	return h, nil
 }
 
-func (s *Handler) UserDelete(ctx context.Context, in *authservicepb.UserIDRequest, out *emptypb.Empty) error {
+func (h *Handler) Start() error { return nil }
+func (h *Handler) Stop() error  { return nil }
+
+func (h *Handler) UserDelete(ctx context.Context, in *authservicepb.UserIDRequest, out *emptypb.Empty) error {
 	return nil
 }
 
-func (s *Handler) UserUpdateRoles(ctx context.Context, in *authservicepb.UpdateRolesRequest, out *emptypb.Empty) error {
+func (h *Handler) UserUpdateRoles(ctx context.Context, in *authservicepb.UpdateRolesRequest, out *emptypb.Empty) error {
 	return nil
 }
 
-func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterRequest, out *emptypb.Empty) error {
+func (h *Handler) Register(ctx context.Context, in *authservicepb.RegisterRequest, out *emptypb.Empty) error {
 	if goaway.IsProfane(in.Username) {
-		return errors.New(s.svcName, "Badword filter matched", http.StatusBadRequest)
+		return errors.New(h.svcName, "Badword filter matched", http.StatusBadRequest)
 	}
 
 	return nil
 }
 
-func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *emptypb.Empty) error {
+func (h *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out *emptypb.Empty) error {
 	return nil
 }
 
-func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *emptypb.Empty) error {
+func (h *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *emptypb.Empty) error {
 	return nil
 }

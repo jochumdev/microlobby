@@ -26,22 +26,25 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 	return h, nil
 }
 
-func (s *Handler) IsProfane(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.BoolResponse) error {
+func (h *Handler) Start() error { return nil }
+func (h *Handler) Stop() error  { return nil }
+
+func (h *Handler) IsProfane(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.BoolResponse) error {
 	out.Response = goaway.IsProfane(in.Request)
 	return nil
 }
 
-func (s *Handler) ExtractProfanity(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.StringResponse) error {
+func (h *Handler) ExtractProfanity(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.StringResponse) error {
 	out.Response = goaway.ExtractProfanity(in.Request)
 	return nil
 }
 
-func (s *Handler) Censor(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.StringResponse) error {
+func (h *Handler) Censor(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.StringResponse) error {
 	out.Response = goaway.Censor(in.Request)
 	return nil
 }
 
-func (s *Handler) Check(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.CheckResponse) error {
+func (h *Handler) Check(ctx context.Context, in *badwordspb.StringRequest, out *badwordspb.CheckResponse) error {
 	out.Profane = goaway.IsProfane(in.Request)
 	out.Extracted = goaway.ExtractProfanity(in.Request)
 	out.Censored = goaway.Censor(in.Request)
