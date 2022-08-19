@@ -23,7 +23,7 @@ func main() {
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
 	)
-	registry.Service = service
+	registry.SetService(service)
 
 	routes := []*infoservicepb.RoutesReply_Route{}
 

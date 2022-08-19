@@ -63,7 +63,7 @@ func sClientFromContext(context context.Context) (settingsservicepb.SettingsV1Se
 		return nil, err
 	}
 
-	service := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, reg.Service.Client())
+	service := settingsservicepb.NewSettingsV1Service(defs.ServiceSettingsV1, reg.Client)
 	return service, nil
 
 }

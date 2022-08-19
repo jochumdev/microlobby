@@ -4,11 +4,12 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/service/auth/v1/db"
@@ -22,6 +23,9 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
+const svcName = "microlobby.auth.v1"
+const pkgPath = "wz2100.net/microlobby/service/auth/v1/service/authService"
+
 type Config struct {
 	RefreshTokenExpiry int64 `json:"refresh_token_expiry"`
 	AccessTokenExpiry  int64 `json:"access_token_expiry"`
@@ -31,12 +35,20 @@ type Handler struct {
 	cRegistry *component.Registry
 	settings  map[string][]byte
 	config    *Config
+
+	logrus component.LogrusComponent
 }
 
 func NewHandler(cregistry *component.Registry) (*Handler, error) {
+	logrus, err := component.Logrus(cregistry)
+	if err != nil {
+		return nil, err
+	}
+
 	h := &Handler{
 		cRegistry: cregistry,
 		settings:  make(map[string][]byte),
+		logrus:    logrus,
 	}
 
 	go func() {
@@ -187,9 +199,9 @@ func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterReques
 		return err
 	}
 
-	result, err := db.UserCreate(ctx, in.Username, hash, []string{auth.ROLE_USER})
+	result, err := db.UserCreate(ctx, in.Username, hash, in.Email, []string{auth.ROLE_USER})
 	if err != nil {
-		return err
+		return errors.New(svcName, "User already exists", http.StatusConflict)
 	}
 
 	out.Id = result.ID.String()
@@ -203,7 +215,7 @@ func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterReques
 func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservicepb.Token) error {
 	pRefreshKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPriv]
 	if !ok {
-		return errors.New("no signinkey, can't generate the refresh token, check again later")
+		return errors.New(svcName, "no signinkey, can't generate the access token, check again later", http.StatusTooEarly)
 	}
 	pRefreshEDKey := ed25519.PrivateKey(pRefreshKey)
 
@@ -229,7 +241,7 @@ func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservice
 
 	pAccessKey, ok := s.settings[defs.SettingNameJWTAccessTokenPriv]
 	if !ok {
-		return errors.New("no signinkey, can't generate the access token, check again later")
+		return errors.New(svcName, "can't generate the access token, check again later", http.StatusTooEarly)
 	}
 	pAccessEDKey := ed25519.PrivateKey(pAccessKey)
 
@@ -266,7 +278,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 	user, err := db.UserFindByUsername(ctx, in.Username)
 	if err != nil {
 		log.Error(err)
-		return errors.New("http 403 - wrong username or password")
+		return errors.New(svcName, "Wrong username or password", http.StatusUnauthorized)
 	}
 
 	ok, err := argon2.Verify(in.Password, user.Password)
@@ -274,7 +286,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 		return err
 	}
 	if !ok {
-		return errors.New("http 403 - wrong username or password")
+		return errors.New(svcName, "Wrong username or password", http.StatusUnauthorized)
 	}
 
 	return s.genTokens(ctx, user, out)
@@ -283,7 +295,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *authservicepb.Token) error {
 	pRefreshPubKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPub]
 	if !ok {
-		return errors.New("no pubkey, can't check the refresh token, check again later")
+		return errors.New(svcName, "can't check the refresh token, check again later", http.StatusTooEarly)
 	}
 
 	claims := auth.JWTMicrolobbyClaims{}
@@ -295,7 +307,7 @@ func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *aut
 		return ed25519.PublicKey(pRefreshPubKey), nil
 	})
 	if err != nil {
-		return fmt.Errorf("checking the RefreshToken: %s", err)
+		return errors.New(svcName, fmt.Sprintf("checking the RefreshToken: %s", err), http.StatusBadRequest)
 	}
 
 	// Check claims (expiration)
@@ -305,7 +317,7 @@ func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *aut
 
 	user, err := db.UserFindById(ctx, claims.Id)
 	if err != nil {
-		return fmt.Errorf("error fetching the user: %s", err)
+		return errors.New(svcName, fmt.Sprintf("error fetching the user: %s", err), http.StatusUnauthorized)
 	}
 
 	return s.genTokens(ctx, user, out)

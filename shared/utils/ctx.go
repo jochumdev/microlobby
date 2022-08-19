@@ -31,7 +31,7 @@ func CtxFromRequest(c *gin.Context, r *http.Request) context.Context {
 		}
 	}
 
-	return metadata.NewContext(c, md)
+	return metadata.MergeContext(c, md, true)
 }
 
 func CtxMetadataUser(ctx context.Context) (*userpb.User, error) {

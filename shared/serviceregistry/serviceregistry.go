@@ -3,18 +3,30 @@ package serviceregistry
 import (
 	"context"
 
+	"go-micro.dev/v4/client"
+	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/registry"
+	"go-micro.dev/v4/server"
+	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
+	"wz2100.net/microlobby/shared/proto/prehandlerpb"
+	"wz2100.net/microlobby/shared/utils"
 )
 
 type ServiceListResult map[*registry.Service][]*registry.Endpoint
 
-func ServiceEndpoints(service *registry.Service, reg registry.Registry, ctx context.Context) ([]*registry.Endpoint, error) {
+type WrappedEndpoint struct {
+	Pre     string
+	Handler string
+}
+
+func Endpoints(ctx context.Context, cRegistry *component.Registry, service *registry.Service) ([]*registry.Endpoint, error) {
 	if len(service.Endpoints) > 0 {
 		eps := append([]*registry.Endpoint{}, service.Endpoints...)
 		return eps, nil
 	}
 	// lookup the endpoints otherwise
-	newServices, err := reg.GetService(service.Name, registry.GetContext(ctx))
+	newServices, err := cRegistry.Service.Options().Registry.GetService(service.Name)
 	if err != nil {
 		return []*registry.Endpoint{}, err
 	}
@@ -30,15 +42,15 @@ func ServiceEndpoints(service *registry.Service, reg registry.Registry, ctx cont
 	return eps, nil
 }
 
-func ServiceListEndpoints(reg registry.Registry, ctx context.Context) (ServiceListResult, error) {
-	services, err := reg.ListServices(registry.ListContext(ctx))
+func ListEndpoints(ctx context.Context, cRegistry *component.Registry) (ServiceListResult, error) {
+	services, err := cRegistry.Service.Options().Registry.ListServices()
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := make(ServiceListResult)
 	for _, service := range services {
-		eps, err := ServiceEndpoints(service, reg, ctx)
+		eps, err := Endpoints(ctx, cRegistry, service)
 		if err != nil {
 			continue
 		}
@@ -49,8 +61,8 @@ func ServiceListEndpoints(reg registry.Registry, ctx context.Context) (ServiceLi
 	return endpoints, nil
 }
 
-func ServicesFindByEndpoint(endpoint string, reg registry.Registry, ctx context.Context) ([]*registry.Service, error) {
-	services, err := ServiceListEndpoints(reg, ctx)
+func FindByEndpoint(ctx context.Context, cRegistry *component.Registry, endpoint string) ([]*registry.Service, error) {
+	services, err := ListEndpoints(ctx, cRegistry)
 	if err != nil {
 		return []*registry.Service{}, err
 	}
@@ -65,4 +77,49 @@ func ServicesFindByEndpoint(endpoint string, reg registry.Registry, ctx context.
 	}
 
 	return result, nil
+}
+
+func CallEndPoints(ctx context.Context, cRegistry *component.Registry, endpoint string, req, out interface{}) error {
+	services, err := ListEndpoints(ctx, cRegistry)
+	if err != nil {
+		return errors.FromError(err)
+	}
+
+	for svc, eps := range services {
+		for _, ep := range eps {
+			if ep.Name == endpoint {
+				req := cRegistry.Client.NewRequest(svc.Name, endpoint, req, client.WithContentType("application/json"))
+				if err := cRegistry.Client.Call(ctx, req, out); err != nil {
+					return errors.FromError(err)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func NewHandlerWrapper(cRegistry *component.Registry, routes []*infoservicepb.RoutesReply_Route) server.HandlerWrapper {
+	preEndpoints := make(map[string]string)
+
+	for _, r := range routes {
+		if len(r.PreEndpoint) > 0 {
+			preEndpoints[r.Endpoint] = r.PreEndpoint
+		}
+	}
+
+	return func(h server.HandlerFunc) server.HandlerFunc {
+		return func(ctx context.Context, req server.Request, rsp interface{}) error {
+			// Wrap into a pre call?
+			if v, ok := preEndpoints[req.Endpoint()]; ok && len(v) > 0 {
+				tmp := &prehandlerpb.PreHandlerResult{}
+				if err := CallEndPoints(utils.CtxForService(ctx), cRegistry, preEndpoints[req.Endpoint()], req.Body(), tmp); err != nil {
+					return err
+				}
+			}
+
+			// If no error happened execute the original function.
+			return h(ctx, req, rsp)
+		}
+	}
 }

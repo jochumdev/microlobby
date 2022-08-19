@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package shared.prehandler;
+
+option go_package = "wz2100.net/microlobby/shared/proto/prehandlerpb;prehandlerpb";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.ServiceOptions {
+    optional string my_prehandler_option = 50099;
+}
+
+message PreHandlerResult {}

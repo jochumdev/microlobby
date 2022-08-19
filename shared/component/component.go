@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
+	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/server"
 )
 
@@ -40,7 +41,9 @@ type Registry struct {
 	components map[interface{}]Component
 
 	Service micro.Service
-	Logrus  LogrusComponent
+	Client  client.Client
+
+	Logrus LogrusComponent
 }
 
 type HealthInfo struct {
@@ -82,6 +85,11 @@ func NewRegistry(components ...Component) *Registry {
 	reg.Add(components...)
 
 	return reg
+}
+
+func (r *Registry) SetService(service micro.Service) {
+	r.Service = service
+	r.Client = service.Client()
 }
 
 func (r *Registry) Add(components ...Component) {

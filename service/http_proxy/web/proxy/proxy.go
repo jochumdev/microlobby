@@ -67,13 +67,13 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 		ctx := context.Background()
 
 		for {
-			services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Routes", h.cRegistry.Service.Options().Registry, ctx)
+			services, err := serviceregistry.FindByEndpoint(ctx, h.cRegistry, "InfoService.Routes")
 			if err != nil {
 				return
 			}
 
 			for _, s := range services {
-				client := infoservicepb.NewInfoService(s.Name, cregistry.Service.Client())
+				client := infoservicepb.NewInfoService(s.Name, cregistry.Client)
 				resp, err := client.Routes(ctx, &emptypb.Empty{})
 				if err != nil {
 					// failure in getting routes, silently ignore
@@ -338,13 +338,13 @@ func (h *Handler) proxy(serviceName string, route *infoservicepb.RoutesReply_Rou
 			request[pn] = p
 		}
 
-		req := h.cRegistry.Service.Client().NewRequest(serviceName, route.GetEndpoint(), request, client.WithContentType("application/json"))
+		req := h.cRegistry.Client.NewRequest(serviceName, route.GetEndpoint(), request, client.WithContentType("application/json"))
 
 		ctx := utils.CtxFromRequest(c, c.Request)
 
 		// remote call
 		var response json.RawMessage
-		err := h.cRegistry.Service.Client().Call(ctx, req, &response)
+		err := h.cRegistry.Client.Call(ctx, req, &response)
 		if err != nil {
 			if cLogrus, lErr := component.Logrus(h.cRegistry); lErr == nil {
 				cLogrus.WithClassFunc(pkgPath, "Handler", "proxy").Error(err)
@@ -374,7 +374,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 
 	allFine := true
 
-	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", h.cRegistry.Service.Options().Registry, context.TODO())
+	services, err := serviceregistry.FindByEndpoint(context.TODO(), h.cRegistry, "InfoService.Health")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -385,7 +385,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 
 	servicesStatus := gin.H{}
 	for _, s := range services {
-		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
+		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Client)
 		resp, err := client.Health(c, &emptypb.Empty{})
 
 		if err != nil {

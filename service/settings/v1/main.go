@@ -31,7 +31,7 @@ func main() {
 		micro.Flags(registry.Flags()...),
 		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),
 	)
-	registry.Service = service
+	registry.SetService(service)
 
 	routes := []*infoservicepb.RoutesReply_Route{
 		{

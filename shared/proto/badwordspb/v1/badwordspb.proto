@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package shared.badwordspb.v1;
+
+option go_package = "wz2100.net/microlobby/shared/proto/badwordspb/v1;badwordspb";
+
+service BadwordsV1Service {
+    rpc IsProfane(StringRequest) returns (BoolResponse) {}
+    rpc ExtractProfanity(StringRequest) returns (StringResponse) {}
+    rpc Censor(StringRequest) returns (StringResponse) {}
+    rpc Check(StringRequest) returns (CheckResponse) {}
+}
+
+message StringRequest {
+    string request = 1;
+}
+
+message StringResponse {
+    string response = 1;
+}
+
+message BoolResponse {
+    bool response = 1;
+}
+
+message CheckResponse {
+    bool profane = 1;
+    string extracted = 2;
+    string censored = 3;
+}

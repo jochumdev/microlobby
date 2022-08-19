@@ -16,6 +16,7 @@ import (
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
+	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
 )
 
@@ -31,7 +32,7 @@ func main() {
 		micro.Flags(registry.Flags()...),
 		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),
 	)
-	registry.Service = service
+	registry.SetService(service)
 
 	routes := []*infoservicepb.RoutesReply_Route{
 		{
@@ -46,6 +47,7 @@ func main() {
 			Method:          http.MethodDelete,
 			Path:            "/user/:userId",
 			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserDelete),
+			PreEndpoint:     utils.ReflectFunctionName(authservicepb.AuthV1PreService.UserDelete),
 			Params:          []string{"userId"},
 			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 		},
@@ -60,27 +62,37 @@ func main() {
 			Method:          http.MethodPut,
 			Path:            "/user/:userId/roles",
 			Endpoint:        utils.ReflectFunctionName(authservicepb.AuthV1Service.UserUpdateRoles),
+			PreEndpoint:     utils.ReflectFunctionName(authservicepb.AuthV1PreService.UserUpdateRoles),
 			IntersectsRoles: []string{auth.ROLE_SUPERADMIN},
 			Params:          []string{"userId"},
 		},
 		{
-			Method:   http.MethodPost,
-			Path:     "/login",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Login),
+			Method:      http.MethodPost,
+			Path:        "/login",
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.Login),
+			PreEndpoint: utils.ReflectFunctionName(authservicepb.AuthV1PreService.Login),
 		},
 		{
-			Method:   http.MethodPost,
-			Path:     "/register",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Register),
+			Method:      http.MethodPost,
+			Path:        "/register",
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.Register),
+			PreEndpoint: utils.ReflectFunctionName(authservicepb.AuthV1PreService.Register),
 		},
 		{
-			Method:   http.MethodPost,
-			Path:     "/refresh",
-			Endpoint: utils.ReflectFunctionName(authservicepb.AuthV1Service.Refresh),
+			Method:      http.MethodPost,
+			Path:        "/refresh",
+			Endpoint:    utils.ReflectFunctionName(authservicepb.AuthV1Service.Refresh),
+			PreEndpoint: utils.ReflectFunctionName(authservicepb.AuthV1PreService.Refresh),
 		},
 	}
 
 	service.Init(
+		micro.WrapHandler(
+			serviceregistry.NewHandlerWrapper(
+				registry,
+				routes,
+			),
+		),
 		micro.Action(func(c *cli.Context) error {
 			if err := registry.Init(c); err != nil {
 				return err

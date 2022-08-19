@@ -19,9 +19,11 @@ message RoutesReply {
         string method = 2;
         string path = 3;
         string endpoint = 4;
-        string requireRole = 5;
-        repeated string params = 6;
-        repeated string intersectsRoles = 7;
+        string preEndpoint = 5;
+        string postEndpoint = 6;
+        string requireRole = 7;
+        repeated string params = 8;
+        repeated string intersectsRoles = 9;
     }
 
     string proxyURI = 1;

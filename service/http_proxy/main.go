@@ -32,7 +32,7 @@ func main() {
 		microWeb.MicroService(micro.NewService(micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))))),
 		microWeb.Flags(registry.Flags()...),
 	)
-	registry.Service = webService.Options().Service
+	registry.SetService(webService.Options().Service)
 
 	if err := webService.Init(microWeb.Action(func(c *cli.Context) {
 		if err := registry.Init(c); err != nil {

@@ -167,7 +167,7 @@ func UserFindById(ctx context.Context, id string) (*User, error) {
 	return &user, nil
 }
 
-func UserCreate(ctx context.Context, username, password string, roles []string) (*User, error) {
+func UserCreate(ctx context.Context, username, password, email string, roles []string) (*User, error) {
 	// Get the database engine
 	bun, err := component.BunFromContext(ctx)
 	if err != nil {
@@ -178,6 +178,7 @@ func UserCreate(ctx context.Context, username, password string, roles []string) 
 	user := User{}
 	user.Username = username
 	user.Password = password
+	user.Email = email
 	_, err = bun.NewInsert().Model(&user).Exec(ctx, &user)
 	if err != nil {
 		return nil, err

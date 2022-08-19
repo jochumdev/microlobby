@@ -150,6 +150,16 @@ tasks:
       - docker-compose stop http_proxy; docker-compose start http_proxy
       - task: ps
 
+  service:badwords_v1:
+    desc: Build and run/restart badwords/v1, restart http_proxy
+    cmds:
+      - task: service:build
+        vars:
+          SERVICE: badwords/v1
+      - task: up
+      - docker-compose stop http_proxy; docker-compose start http_proxy
+      - task: ps
+
   up:
     desc: Run all containers
     deps:

@@ -29,7 +29,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) {
 func (h *Handler) getHealth(c *gin.Context) {
 	allFine := true
 
-	services, err := serviceregistry.ServicesFindByEndpoint("InfoService.Health", h.cRegistry.Service.Options().Registry, c)
+	services, err := serviceregistry.FindByEndpoint(c, h.cRegistry, "InfoService.Health")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  500,
@@ -43,7 +43,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	for _, s := range services {
 		foundServices = append(foundServices, s.Name)
 
-		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Service.Client())
+		client := infoservicepb.NewInfoService(s.Name, h.cRegistry.Client)
 		resp, err := client.Health(context.TODO(), &emptypb.Empty{})
 
 		if err != nil {
