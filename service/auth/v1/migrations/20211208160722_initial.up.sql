@@ -31,11 +31,11 @@ CREATE TABLE public.users_roles
     role_id BIGINT NOT NULL,
 
     UNIQUE(role_id, user_id),
-    FOREIGN KEY(user_id) REFERENCES public.users(id),
-    FOREIGN KEY(role_id) REFERENCES public.roles(id)
+    FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+    FOREIGN KEY(role_id) REFERENCES public.roles(id) ON DELETE CASCADE
 );
-CREATE INDEX user_id_idx ON users_roles (user_id) ON DELETE CASCADE;
-CREATE INDEX role_id_idx ON users_roles (role_id) ON DELETE CASCADE;
+CREATE INDEX user_id_idx ON users_roles (user_id);
+CREATE INDEX role_id_idx ON users_roles (role_id);
 
 INSERT INTO roles (name) VALUES ('service'), ('user'), ('admin'), ('superadmin');
 

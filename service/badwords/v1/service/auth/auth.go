@@ -23,22 +23,25 @@ type Handler struct {
 }
 
 func NewHandler(cregistry *component.Registry) (*Handler, error) {
-	logrus, err := component.Logrus(cregistry)
-	if err != nil {
-		return nil, err
-	}
-
 	h := &Handler{
 		cRegistry: cregistry,
-		logrus:    logrus,
 		svcName:   cregistry.Service.Name(),
 	}
 
 	return h, nil
 }
 
-func (h *Handler) Start() error { return nil }
-func (h *Handler) Stop() error  { return nil }
+func (h *Handler) Start() error {
+	logrus, err := component.Logrus(h.cRegistry)
+	if err != nil {
+		return errors.FromError(err)
+	}
+	h.logrus = logrus
+
+	return nil
+}
+
+func (h *Handler) Stop() error { return nil }
 
 func (h *Handler) UserDelete(ctx context.Context, in *authservicepb.UserIDRequest, out *emptypb.Empty) error {
 	return nil

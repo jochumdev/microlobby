@@ -42,22 +42,22 @@ type Handler struct {
 }
 
 func NewHandler(cregistry *component.Registry) (*Handler, error) {
-	logrus, err := component.Logrus(cregistry)
-	if err != nil {
-		return nil, err
-	}
-
 	h := &Handler{
 		cRegistry: cregistry,
 		settings:  make(map[string][]byte),
 		svcName:   cregistry.Service.Name(),
-		logrus:    logrus,
 	}
 
 	return h, nil
 }
 
 func (h *Handler) Start() error {
+	logrus, err := component.Logrus(h.cRegistry)
+	if err != nil {
+		return errors.FromError(err)
+	}
+	h.logrus = logrus
+
 	ctx := component.RegistryToContext(utils.CtxForService(context.Background()), h.cRegistry)
 	s, err := component.SettingsV1(h.cRegistry)
 	if err != nil {

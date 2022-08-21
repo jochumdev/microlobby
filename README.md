@@ -72,6 +72,8 @@ git clone https://github.com/pcdummy/microlobby.git
 cd microlobby
 cp .env.sample .env
 task
+# Restart to have a postgres connection
+task down; task up
 ```
 
 Now enjoy the [health api](http://localhost:8080/health)
@@ -82,14 +84,20 @@ Now enjoy the [health api](http://localhost:8080/health)
 
 ```bash
 source ./token_login.sh admin asdf1234
-echo $ACCESS_TOKEN
 ```
 
 - Check the proxy health api
 
 ```bash
-curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/health
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/health | jq
 ```
+
+- Get a list of routes
+
+```bash
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/routes | jq
+```
+
 
 ## Authors
 
