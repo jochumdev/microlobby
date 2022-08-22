@@ -7,9 +7,9 @@ import (
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/registry"
 	"go-micro.dev/v4/server"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
-	"wz2100.net/microlobby/shared/proto/prehandlerpb"
 	"wz2100.net/microlobby/shared/utils"
 )
 
@@ -112,7 +112,7 @@ func NewHandlerWrapper(cRegistry *component.Registry, routes []*infoservicepb.Ro
 		return func(ctx context.Context, req server.Request, rsp interface{}) error {
 			// Wrap into a pre call?
 			if v, ok := preEndpoints[req.Endpoint()]; ok && len(v) > 0 {
-				tmp := &prehandlerpb.PreHandlerResult{}
+				tmp := &emptypb.Empty{}
 				if err := CallEndPoints(utils.CtxForService(ctx), cRegistry, preEndpoints[req.Endpoint()], req.Body(), tmp); err != nil {
 					return err
 				}

@@ -10,6 +10,7 @@ import (
 	"go-micro.dev/v4/util/log"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
+	sdb "wz2100.net/microlobby/shared/db"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/utils"
 )
@@ -24,8 +25,8 @@ type Setting struct {
 	RolesRead     []string  `bun:"roles_read,array" json:"roles_read" yaml:"roles_read"`
 	RolesUpdate   []string  `bun:"roles_update,array" json:"roles_update" yaml:"roles_update"`
 
-	Timestamps
-	SoftDelete
+	sdb.Timestamps
+	sdb.SoftDelete
 }
 
 func (s *Setting) UserHasReadPermission(ctx context.Context) bool {

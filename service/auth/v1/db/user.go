@@ -7,6 +7,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"wz2100.net/microlobby/shared/component"
+	sdb "wz2100.net/microlobby/shared/db"
 )
 
 type User struct {
@@ -17,8 +18,8 @@ type User struct {
 	Email         string    `bun:"email" json:"email" yaml:"email"`
 	Roles         []string  `bun:",array,scanonly" json:"roles" yaml:"roles"`
 
-	Timestamps
-	SoftDelete
+	sdb.Timestamps
+	sdb.SoftDelete
 }
 
 func UserList(ctx context.Context, limit, offset uint64) ([]User, error) {
