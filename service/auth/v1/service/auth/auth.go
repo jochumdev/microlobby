@@ -45,6 +45,7 @@ func NewHandler(cregistry *component.Registry) (*Handler, error) {
 	h := &Handler{
 		cRegistry: cregistry,
 		settings:  make(map[string][]byte),
+		config:    &Config{},
 		svcName:   cregistry.Service.Name(),
 	}
 
@@ -64,39 +65,31 @@ func (h *Handler) Start() error {
 		return errors.FromError(err)
 	}
 
-	_, ok := h.settings["config"]
-	if !ok {
-		var c *Config
-		se, err := s.Get(ctx, "", "", h.svcName, "config")
-		if err == nil {
-			err = json.Unmarshal(se.Content, c)
-		} else {
-			c = &Config{
-				RefreshTokenExpiry: 86400 * 14, // 14 days
-				AccessTokenExpiry:  900,        // 15 minutes
-			}
-			craw, err := json.Marshal(c)
-			if err != nil {
-				return errors.FromError(err)
-			}
-
-			_, err = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-				Service:     h.svcName,
-				Name:        "config",
-				Content:     craw,
-				RolesRead:   []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
-				RolesUpdate: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
-			})
-
-			if err != nil {
-				return errors.FromError(err)
-			}
+	se, err := s.Get(ctx, "", "", h.svcName, "config")
+	if err == nil {
+		err = json.Unmarshal(se.Content, h.config)
+	} else {
+		h.config.RefreshTokenExpiry = 86400 * 14 // 14 days
+		h.config.AccessTokenExpiry = 900         // 15 minutes
+		craw, err := json.Marshal(h.config)
+		if err != nil {
+			return errors.FromError(err)
 		}
 
-		h.config = c
+		_, err = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
+			Service:     h.svcName,
+			Name:        "config",
+			Content:     craw,
+			RolesRead:   []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
+			RolesUpdate: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
+		})
+
+		if err != nil {
+			return errors.FromError(err)
+		}
 	}
 
-	_, ok = h.settings[defs.SettingNameJWTRefreshTokenPub]
+	_, ok := h.settings[defs.SettingNameJWTRefreshTokenPub]
 	_, ok2 := h.settings[defs.SettingNameJWTRefreshTokenPriv]
 	if !ok || !ok2 {
 		spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPub)
