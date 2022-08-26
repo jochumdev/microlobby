@@ -191,6 +191,24 @@ services:
     profiles:
       - tools
 
+  dashboard:
+    image: xpunch/go-micro-dashboard:latest
+    environment:
+      - MICRO_TRANSPORT=grpc
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
+      - SERVER_ADDRESS=:8082
+      - SERVER_AUTH_USERNAME=${DASHBOARD_USER}
+      - SERVER_AUTH_PASSWORD=${DASHBOARD_PASSWORD}
+    ports:
+      - 8082:8082
+    depends_on:
+      - nats
+    profiles:
+      - app
+
 volumes:
   go: {}
   nats: {}
