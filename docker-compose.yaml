@@ -186,12 +186,13 @@ services:
     environment:
       - GOPROXY=https://proxy.golang.org,direct
     volumes:
-      - "~/go:/go:rw"
+      - "go:/go:rw"
       - ".:/microlobby:rw"
     profiles:
       - tools
 
 volumes:
+  go: {}
   nats: {}
   postgresd: {}
   pgadmin: {}

@@ -16,4 +16,6 @@ COPY ./scripts /scripts
 # Run as user from here
 WORKDIR /microlobby
 
+ENV GOPATH="/go"
+
 VOLUME [ "/go", "/microlobby" ]

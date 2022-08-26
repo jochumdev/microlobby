@@ -486,6 +486,8 @@ github.com/go-logr/logr v1.2.1/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbV
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/stdr v1.2.0/go.mod h1:YkVgnZu1ZjjL7xTxrfm/LLZBfkhTqSR1ydtm6jTKKwI=
 github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
+github.com/go-micro/generator/cmd/protoc-gen-micro v1.0.0 h1:O/L+BqbnzsWV7ks5WO+dPYK0+6K60xCEFB+GW3GSbtg=
+github.com/go-micro/generator/cmd/protoc-gen-micro v1.0.0/go.mod h1:10I+mxNk2en3yjwqYn5DVU9Iv9l9uXyVuEYyNNxYGek=
 github.com/go-micro/plugins/v4/broker/nats v1.1.0 h1:JCo2JksH0M6HC8q8L+x9QCqGRr5M0BADQw2Q50TWCas=
 github.com/go-micro/plugins/v4/broker/nats v1.1.0/go.mod h1:qfrgRHN39JMwkml/50LD2zWkHoEAROX5kNJd12Nll9c=
 github.com/go-micro/plugins/v4/registry/nats v1.1.0 h1:oqQzP5P2FkfoYZiBRuCWsKqh4BCJG6MQkxYmLw2lNrU=

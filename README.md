@@ -8,8 +8,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
   - Podman/Docker
   - docker-compose
   - task
-- Leaves only "~/go" on the OS in podman mode, nothing in docker mode
-- Everything in containers
+- Everything in containers, leaves nothing on the Host except Podman/Docker volumes. "task rm" removes everything.
 - Automated migrations, migrating on start
 - gRPC+Protobuf internal, JSON/XML external
 - Argon2-id Hashes
@@ -72,8 +71,6 @@ git clone https://github.com/pcdummy/microlobby.git
 cd microlobby
 cp .env.sample .env
 task
-# Restart to have a postgres connection
-task down; task up
 ```
 
 Now enjoy the [health api](http://localhost:8080/health)
@@ -97,7 +94,6 @@ curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN
 ```bash
 curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/routes | jq
 ```
-
 
 ## Authors
 
