@@ -9,6 +9,9 @@ const ROLE_ADMIN = "admin"
 const ROLE_USER = "user"
 const ROLE_SERVICE = "service"
 
+var AllowServiceAndUsers = []string{"service", "user", "admin", "superadmin"}
+var AllowServiceAndAdmin = []string{"service", "admin", "superadmin"}
+
 func HasRole(user *userpb.User, role string) bool {
 	for _, ur := range user.Roles {
 		if ur == role {

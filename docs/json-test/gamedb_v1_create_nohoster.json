@@ -1,0 +1,30 @@
+{
+    "description": "Test Game",
+    "map": "test map",
+    "mods": [],
+    "hostIp": "127.0.0.1",
+    "port": 2100,
+    "players": [
+        {
+            "uuid": "00000000-0000-0000-0000-000000000001",
+            "name": "[KING]Fast",
+            "ipAddress": "127.0.0.1"
+        },
+        {
+            "uuid": "00000000-0000-0000-0000-000000000002",
+            "name": "Unknown1",
+            "ipAddress": "10.10.10.1"
+        },
+        {
+            "uuid": "00000000-0000-0000-0000-000000000003",
+            "name": "Unknown1",
+            "ipAddress": "10.10.10.1"
+        }
+    ],
+    "maxPlayers": 8,
+    "version": "v4.2.7",
+    "verMajor": 4,
+    "verMinor": 72,
+    "isPure": true,
+    "isPrivate": true
+}

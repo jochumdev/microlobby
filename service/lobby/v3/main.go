@@ -6,7 +6,8 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	"wz2100.net/microlobby/service/lobby/v1/version"
+	lobbySvc "wz2100.net/microlobby/service/lobby/v3/service/lobby"
+	"wz2100.net/microlobby/service/lobby/v3/version"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/infoservice"
@@ -18,7 +19,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceLobbyV1),
+		micro.Name(defs.ServiceLobbyV3),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(version.Version),
 		micro.Flags(registry.Flags()...),
@@ -27,6 +28,11 @@ func main() {
 
 	routes := []*infoservicepb.RoutesReply_Route{}
 
+	lobbyH, err := lobbySvc.NewHandler(registry)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	service.Init(
 		micro.Action(func(c *cli.Context) error {
 			if err := registry.Init(c); err != nil {
@@ -34,14 +40,22 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, defs.ProxyURILobby, "v1", routes)
+			infoService := infoservice.NewHandler(registry, defs.ProxyURILobby, "v3", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
+
+			if err := lobbyH.Start(); err != nil {
+				log.Fatalln(err)
+			}
 
 			return nil
 		}),
 	)
 
 	if err := service.Run(); err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := lobbyH.Stop(); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -15,7 +15,7 @@ import (
 // const pkgPath = "wz2100.net/microlobby/shared/component"
 
 var (
-	errorRetrievingRegistry = errors.New("retrieving registry")
+	errorRetrievingRegistry = errors.New("Error while retrieving registry")
 	errorRegistryIsNil      = errors.New("registry is nil")
 )
 

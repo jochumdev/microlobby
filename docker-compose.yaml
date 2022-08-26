@@ -66,14 +66,14 @@ services:
     profiles:
       - app
 
-  lobby_v1:
+  gamedb_v1:
     # restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/genericservice/Dockerfile
       args:
-        SERVICE: lobby/v1
-    image: microlobby-service-lobby-v1:latest
+        SERVICE: gamedb/v1
+    image: microlobby-service-gamedb-v1:latest
     environment:
       - MICRO_TRANSPORT=grpc
       - MICRO_REGISTRY=nats
@@ -81,6 +81,31 @@ services:
       - MICRO_BROKER=nats
       - MICRO_BROKER_ADDRESS=nats:4222
       - LOG_LEVEL=${LOG_LEVEL}
+      - DATABASE_DEBUG=true
+      - DATABASE_URL=${ML_GAMEDB_DB_URL}
+    depends_on:
+      - nats
+      - postgresd
+    profiles:
+      - app
+
+  lobby_v3:
+    # restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/genericservice/Dockerfile
+      args:
+        SERVICE: lobby/v3
+    image: microlobby-service-lobby-v3:latest
+    environment:
+      - MICRO_TRANSPORT=grpc
+      - MICRO_REGISTRY=nats
+      - MICRO_REGISTRY_ADDRESS=nats:4222
+      - MICRO_BROKER=nats
+      - MICRO_BROKER_ADDRESS=nats:4222
+      - LOG_LEVEL=${LOG_LEVEL}
+    ports:
+      - 9990:9990
     depends_on:
       - nats
       - postgresd

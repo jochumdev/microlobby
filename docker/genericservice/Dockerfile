@@ -18,12 +18,12 @@ COPY ./service/${SERVICE} /microlobby/service/${SERVICE}
 WORKDIR /microlobby/service/${SERVICE}
 
 # RUN go mod download
-
+ENV GOPATH="/go"
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -ldflags="-w -s" -o /usr/local/bin/microservice
 
 
 # STEP 2 build a small image
-# start from scratch
+# start from busybox
 FROM busybox
 
 ARG SERVICE

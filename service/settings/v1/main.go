@@ -49,21 +49,14 @@ func main() {
 		},
 		{
 			Method:          http.MethodGet,
-			Path:            "/entry",
-			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Get),
-			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
-			Params:          []string{"id", "ownerId", "service", "name"},
-		},
-		{
-			Method:          http.MethodGet,
-			Path:            "/entry/:id",
+			Path:            "/:id",
 			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Get),
 			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 			Params:          []string{"id", "ownerId", "service", "name"},
 		},
 		{
 			Method:          http.MethodPut,
-			Path:            "/entry/:id",
+			Path:            "/:id",
 			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Update),
 			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 			Params:          []string{"id"},

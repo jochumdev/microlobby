@@ -71,7 +71,15 @@ tasks:
     deps:
      - check:toolchain
     cmds:
-      - docker-compose --profile tools build
+    
+      - |
+        # Run with podman
+        test -n "{{.CMD_PODMAN}}" && \
+        podman build -v "{{.GOPATH}}:/go:rw" -t localhost/microlobby-builder:latest -f docker/builder/Dockerfile ./docker/builder/ || exit 1
+      - | 
+        # Run with docker
+        test -n "{{.CMD_PODMAN}}" || \
+        docker-compose --profile tools build
       - task: build:protoc-gen-micro
 
   build:protoc:

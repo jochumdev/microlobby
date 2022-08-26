@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP TABLE IF EXISTS public.games CASCADE;
+DROP TABLE IF EXISTS public.game_players CASCADE;
+
+COMMIT;
