@@ -15,7 +15,7 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/service/gamedb"
+const pkgPath = version.PkgPath + "/handler/gamedb"
 
 func dbPlayerToProto(dp *db.GamePlayer) (*gamedbpb.Player, error) {
 	return &gamedbpb.Player{
@@ -218,6 +218,10 @@ func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) err
 		return errors.New(h.svcName, "No host player given or IP's don't match", http.StatusBadRequest)
 	}
 
+	if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) && nHostPlayer.UUID.String() != user.Id {
+		return errors.New(h.svcName, "Your only allowed to host own games", http.StatusBadRequest)
+	}
+
 	// Update?
 	if oldG != nil {
 		var oldHostPlayer *db.GamePlayer
@@ -328,19 +332,41 @@ func (h *Handler) Update(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 }
 
 func (h *Handler) Delete(ctx context.Context, in *gamedbpb.DeleteRequest, out *empty.Empty) error {
-	user, err := utils.CtxMetadataUser(ctx)
-	if err != nil {
-		return errors.FromError(err)
-	}
-
-	if auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) {
-		return errors.New(h.svcName, "Your not allowed to make that request", http.StatusMethodNotAllowed)
-	}
-
 	// Get the database engine
 	bun, err := component.Bun(h.cRegistry)
 	if err != nil {
 		return err
+	}
+
+	user, err := utils.CtxMetadataUser(ctx)
+	if err != nil {
+		return errors.FromError(err)
+	}
+	if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) {
+		var dg db.Game
+		err = bun.NewSelect().
+			Model(&dg).
+			Relation("Players").
+			Limit(1).
+			Where("g.id = ?", in.Id).Scan(ctx)
+		if err != nil {
+			return errors.FromError(err)
+		}
+
+		var nHostPlayer *db.GamePlayer
+		for _, dp := range dg.Players {
+			if dp.IsHost && dp.IpAddress == dg.HostIp {
+				nHostPlayer = dp
+				break
+			}
+		}
+		if nHostPlayer == nil {
+			return errors.New(h.svcName, "No host player given or IP's don't match", http.StatusBadRequest)
+		}
+
+		if nHostPlayer.UUID.String() != user.Id {
+			return errors.New(h.svcName, "Your not allowed to delete foreign games", http.StatusBadRequest)
+		}
 	}
 
 	// Execute the Delete

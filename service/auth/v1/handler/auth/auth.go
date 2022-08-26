@@ -24,7 +24,7 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/service/auth"
+const pkgPath = version.PkgPath + "/handler/auth"
 
 type Config struct {
 	RefreshTokenExpiry int64 `json:"refresh_token_expiry"`
@@ -194,6 +194,10 @@ func (s *Handler) UserUpdateRoles(ctx context.Context, in *authservicepb.UpdateR
 }
 
 func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterRequest, out *userpb.User) error {
+	if in.Username == auth.ROLE_SERVICE {
+		return errors.New(s.svcName, "User already exists", http.StatusConflict)
+	}
+
 	hash, err := argon2.Hash(in.Password, argon2.DefaultParams)
 	if err != nil {
 		return err

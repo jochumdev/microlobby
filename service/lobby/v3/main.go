@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	lobbySvc "wz2100.net/microlobby/service/lobby/v3/service/lobby"
+	lobbyHandler "wz2100.net/microlobby/service/lobby/v3/handler/lobby"
 	"wz2100.net/microlobby/service/lobby/v3/version"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
@@ -28,7 +28,7 @@ func main() {
 
 	routes := []*infoservicepb.RoutesReply_Route{}
 
-	lobbyH, err := lobbySvc.NewHandler(registry)
+	lobbyH, err := lobbyHandler.NewHandler(registry)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	authSvc "wz2100.net/microlobby/service/auth/v1/service/auth"
+	authHandler "wz2100.net/microlobby/service/auth/v1/handler/auth"
 	"wz2100.net/microlobby/service/auth/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
@@ -84,7 +84,7 @@ func main() {
 		},
 	}
 
-	authH, err := authSvc.NewHandler(registry)
+	authH, err := authHandler.NewHandler(registry)
 	if err != nil {
 		log.Fatalln(err)
 	}

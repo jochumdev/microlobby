@@ -23,6 +23,7 @@ tasks:
       - task: build:tools
       - task: build:protoc
       - task: build
+      - docker-compose --profile app up -d postgresd
       - task: up
       - task: ps
 
@@ -223,7 +224,6 @@ tasks:
     deps:
       - check:toolchain
     cmds:
-      - docker-compose --profile app up -d postgresd
       - docker-compose --profile app up -d --remove-orphans
   
   ps:

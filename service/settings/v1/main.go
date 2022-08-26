@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	settingsService "wz2100.net/microlobby/service/settings/v1/service/settings_service"
+	settingsHandler "wz2100.net/microlobby/service/settings/v1/handler/settings"
 	"wz2100.net/microlobby/service/settings/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
@@ -79,7 +79,7 @@ func main() {
 			infoService := infoservice.NewHandler(registry, defs.ProxyURISettings, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
-			settingsH, err := settingsService.NewHandler()
+			settingsH, err := settingsHandler.NewHandler()
 			if err != nil {
 				logrus.WithFunc(pkgPath, "main").Fatal(err)
 				return err

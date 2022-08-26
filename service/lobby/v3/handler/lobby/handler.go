@@ -14,7 +14,7 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/service/lobby"
+const pkgPath = version.PkgPath + "/handler/lobby"
 
 type Config struct {
 	Host string `json:"host"`

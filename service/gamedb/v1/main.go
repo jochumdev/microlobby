@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	"wz2100.net/microlobby/service/gamedb/v1/service/gamedb"
+	gamedbHandler "wz2100.net/microlobby/service/gamedb/v1/handler/gamedb"
 	"wz2100.net/microlobby/service/gamedb/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
@@ -42,7 +42,7 @@ func main() {
 			Method:          http.MethodPost,
 			Path:            "/",
 			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.Create),
-			IntersectsRoles: auth.AllowServiceAndAdmin,
+			IntersectsRoles: auth.AllowServiceAndUsers,
 		},
 		// {
 		// 	Method:          http.MethodGet,
@@ -58,9 +58,16 @@ func main() {
 			IntersectsRoles: auth.AllowServiceAndUsers,
 			Params:          []string{"id"},
 		},
+		{
+			Method:          http.MethodDelete,
+			Path:            "/:id",
+			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.Delete),
+			IntersectsRoles: auth.AllowServiceAndUsers,
+			Params:          []string{"id"},
+		},
 	}
 
-	gdbH, err := gamedb.NewHandler(registry)
+	gdbH, err := gamedbHandler.NewHandler(registry)
 	if err != nil {
 		log.Fatalln(err)
 	}

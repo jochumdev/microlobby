@@ -10,7 +10,7 @@ import (
 	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
 
-const pkgPath = version.PkgPath + "/service/badwords"
+const pkgPath = version.PkgPath + "/handler/badwords"
 
 type Handler struct {
 	cRegistry *component.Registry

@@ -13,7 +13,7 @@ import (
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 )
 
-const pkgPath = version.PkgPath + "/service/auth"
+const pkgPath = version.PkgPath + "/handler/auth"
 
 type Handler struct {
 	cRegistry *component.Registry
