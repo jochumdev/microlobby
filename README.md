@@ -32,6 +32,7 @@ The draw.io flowchart for the Architecture:
 ### http_proxy
 
 A very simple Proxy to MicroServices. They have to register routes with it over the help of infoservice.
+Infoservice is just a ProtoBuf Service that needs to be registered into each microservice, see [auth/v1](https://github.com/pcdummy/microlobby/blob/master/service/auth/v1/main.go#L105).
 
 It provides 3 routes, the result will be collected from all microservices:
 
@@ -49,10 +50,20 @@ Basic Key/Value Store with Permissions
 
 - Give Username + password and you get a JWT back.
 - Internaly converts a JWT to a user with roles.
+- Does not need a Database it uses AES for the JWT to enforce it's coming from this instance.
+- [jwt.io](https://jwt.io) is very helpfull to see what's in a JWT.
 
-### lobby/v1 Service
+### gamedb/v1 Service
 
 Register a game, get list of games and unregister it.
+
+It provides 4 routes:
+| METHOD | Route             | AUTH | Description           |
+| ------ | ----------------- | ---- | --------------------- |
+| GET    | /                 |  y   | List games            |
+| POST   | /                 |  y   | Create a new game     |
+| PUT    | /:id              |  y   | Update a game         |
+| DELETE | /:id              |  y   | Delete a game         |
 
 ## Development
 
@@ -81,6 +92,12 @@ Now enjoy the [health api](http://localhost:8080/health)
 
 ```bash
 source ./token_login.sh admin asdf1234
+```
+
+- Or refresh it:
+
+```bash
+source ./token_refresh.sh
 ```
 
 - Check the proxy health api
