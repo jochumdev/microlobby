@@ -90,6 +90,11 @@ Now enjoy the [health api](http://localhost:8080/health)
 
 - Get a token:
 
+  It exports 3 variables:
+  - MICROLOBBY
+  - ACCESS_TOKEN
+  - REFRESH_TOKEN
+
 ```bash
 source ./token_login.sh http://localhost:8080 admin asdf1234
 ```
