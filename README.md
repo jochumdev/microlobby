@@ -91,7 +91,7 @@ Now enjoy the [health api](http://localhost:8080/health)
 - Get a token:
 
 ```bash
-source ./token_login.sh admin asdf1234
+source ./token_login.sh http://localhost:8080 admin asdf1234
 ```
 
 - Or refresh it:
@@ -103,25 +103,25 @@ source ./token_refresh.sh
 - Check the proxy health api
 
 ```bash
-curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/health | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/proxy/v1/health | jq
 ```
 
 - Get a list of routes
 
 ```bash
-curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/routes | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/proxy/v1/routes | jq
 ```
 
 - Create a game
 
 ```bash
-curl -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/gamedb/v1/ | jq
+curl -s -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/gamedb/v1/ | jq
 ```
 
 - List games
 
 ```bash
-curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/gamedb/v1/ | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/gamedb/v1/ | jq
 ```
 
 ### Remove everything or start from new
