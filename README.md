@@ -71,7 +71,7 @@ It provides 4 routes:
 
 - [Task](https://taskfile.dev/#/installation)
 - podman/docker
-- docker-compose 1.29+
+- docker-compose 1.29+ (cause of --profile app)
 
 ### Run
 
