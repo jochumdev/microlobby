@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/TwiN/go-away v1.6.8
 	github.com/gin-gonic/gin v1.8.1
+	github.com/go-micro/plugins/v4/server/http v1.1.0
 	github.com/go-micro/plugins/v4/transport/grpc v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jackc/pgx v3.6.2+incompatible
@@ -32,7 +33,6 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-git/go-git/v5 v5.4.2 // indirect
-	github.com/go-micro/generator/cmd/protoc-gen-micro v1.0.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect

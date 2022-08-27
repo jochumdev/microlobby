@@ -15,6 +15,9 @@
 		},
 		{
 			"path": "../go-micro/plugins"
+		},
+		{
+			"path": "../go-micro/dashboard"
 		}
 	]
 }

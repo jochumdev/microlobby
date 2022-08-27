@@ -7,14 +7,14 @@ import (
 	"net"
 
 	"go-micro.dev/v4/errors"
-	"wz2100.net/microlobby/service/lobby/v3/version"
+	"wz2100.net/microlobby/service/lobby/v3/config"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/handler/lobby"
+const pkgPath = config.PkgPath + "/handler/lobby"
 
 type Config struct {
 	Host string `json:"host"`

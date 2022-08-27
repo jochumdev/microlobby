@@ -7,15 +7,15 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"go-micro.dev/v4/errors"
+	"wz2100.net/microlobby/service/gamedb/v1/config"
 	"wz2100.net/microlobby/service/gamedb/v1/db"
-	"wz2100.net/microlobby/service/gamedb/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/handler/gamedb"
+const pkgPath = config.PkgPath + "/handler/gamedb"
 
 func dbPlayerToProto(dp *db.GamePlayer) (*gamedbpb.Player, error) {
 	return &gamedbpb.Player{

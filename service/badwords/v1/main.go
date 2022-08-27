@@ -7,9 +7,9 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
+	"wz2100.net/microlobby/service/badwords/v1/config"
 	authHandler "wz2100.net/microlobby/service/badwords/v1/handler/auth"
 	bwHandler "wz2100.net/microlobby/service/badwords/v1/handler/badwords"
-	"wz2100.net/microlobby/service/badwords/v1/version"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/defs"
@@ -21,7 +21,7 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath
+const pkgPath = config.PkgPath
 
 func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
@@ -29,7 +29,7 @@ func main() {
 	service := micro.NewService(
 		micro.Name(defs.ServiceBadwordsV1),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Version(version.Version),
+		micro.Version(config.Version),
 		micro.Flags(registry.Flags()...),
 		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),
 	)

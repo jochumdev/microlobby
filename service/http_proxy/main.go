@@ -1,17 +1,15 @@
 package main
 
 import (
-	"log"
-
+	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	microWeb "go-micro.dev/v4/web"
+	"go-micro.dev/v4/logger"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-micro/plugins/v4/server/http"
 	ginlogrus "github.com/toorop/gin-logrus"
-	"github.com/urfave/cli/v2"
-
-	"wz2100.net/microlobby/service/http_proxy/version"
+	"wz2100.net/microlobby/service/http_proxy/config"
 	"wz2100.net/microlobby/service/http_proxy/web"
 	"wz2100.net/microlobby/service/http_proxy/web/proxy"
 	"wz2100.net/microlobby/shared/component"
@@ -22,40 +20,44 @@ import (
 func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
 
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
+	srv := micro.NewService()
 
-	webService := microWeb.NewService(
-		microWeb.Name(defs.ServiceHttpProxy),
-		microWeb.Version(version.Version),
-		microWeb.Handler(router),
-		microWeb.MicroService(micro.NewService(micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))))),
-		microWeb.Flags(registry.Flags()...),
-	)
-	registry.SetService(webService.Options().Service)
+	opts := []micro.Option{
+		micro.Name(defs.ServiceHttpProxy),
+		micro.Version(config.Version),
+		micro.Server(http.NewServer()),
+		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
+		micro.Flags(registry.Flags()...),
+		micro.Address(":8080"),
+		micro.Action(func(c *cli.Context) error {
+			gin.SetMode(gin.ReleaseMode)
 
-	if err := webService.Init(microWeb.Action(func(c *cli.Context) {
-		if err := registry.Init(c); err != nil {
-			log.Fatal(err)
-			return
-		}
+			registry.SetService(srv)
+			if err := registry.Init(c); err != nil {
+				return err
+			}
 
-		logrusc, err := component.Logrus(registry)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
+			logrusc, err := component.Logrus(registry)
+			if err != nil {
+				return err
+			}
 
-		router.Use(ginlogrus.Logger(logrusc.Logger()), gin.Recovery())
+			router := gin.New()
+			router.Use(ginlogrus.Logger(logrusc.Logger()), gin.Recovery())
+			web.ConfigureRouter(registry, router)
+			proxy.ConfigureRouter(registry, router)
 
-		web.ConfigureRouter(registry, router)
-		proxy.ConfigureRouter(registry, router)
-	})); err != nil {
-		log.Fatal(err)
+			if err := micro.RegisterHandler(srv.Server(), router); err != nil {
+				logger.Fatal(err)
+			}
+
+			return nil
+		}),
 	}
+	srv.Init(opts...)
 
 	// Run server
-	if err := webService.Run(); err != nil {
-		log.Fatal(err)
+	if err := srv.Run(); err != nil {
+		logger.Fatal(err)
 	}
 }

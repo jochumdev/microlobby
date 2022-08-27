@@ -8,12 +8,12 @@ import (
 
 	"go-micro.dev/v4/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"wz2100.net/microlobby/service/badwords/v1/version"
+	"wz2100.net/microlobby/service/badwords/v1/config"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 )
 
-const pkgPath = version.PkgPath + "/handler/auth"
+const pkgPath = config.PkgPath + "/handler/auth"
 
 type Handler struct {
 	cRegistry *component.Registry

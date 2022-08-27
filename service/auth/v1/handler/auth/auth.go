@@ -12,8 +12,8 @@ import (
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"wz2100.net/microlobby/service/auth/v1/config"
 	"wz2100.net/microlobby/service/auth/v1/db"
-	"wz2100.net/microlobby/service/auth/v1/version"
 	"wz2100.net/microlobby/shared/argon2"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
@@ -24,7 +24,7 @@ import (
 	"wz2100.net/microlobby/shared/utils"
 )
 
-const pkgPath = version.PkgPath + "/handler/auth"
+const pkgPath = config.PkgPath + "/handler/auth"
 
 type Config struct {
 	RefreshTokenExpiry int64 `json:"refresh_token_expiry"`
