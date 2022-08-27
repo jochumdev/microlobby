@@ -112,6 +112,24 @@ curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN
 curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/proxy/v1/routes | jq
 ```
 
+- Create a game
+
+```bash
+curl -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/gamedb/v1/ | jq
+```
+
+- List games
+
+```bash
+curl -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/gamedb/v1/ | jq
+```
+
+### Remove everything or start from new
+
+```bash
+task rm
+```
+
 ## Authors
 
 - René Jochum - rene@jochum.dev
