@@ -9,9 +9,10 @@ import (
 
 	"net/http"
 
+	proxyConfig "wz2100.net/microlobby/service/http_proxy/config"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/userpb/v1"
 
@@ -36,7 +37,7 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 	}
 
 	ctx := component.RegistryToContext(utils.CtxForService(context.Background()), registry)
-	s, err := component.SettingsV1(registry)
+	s, err := scomponent.SettingsV1(registry)
 	if err != nil {
 		logrusc.WithFunc(pkgPath, "UserSrvMiddleware").
 			WithFields(logrus.Fields{
@@ -53,7 +54,7 @@ func UserSrvMiddleware(registry *component.Registry) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		if sJWTAccessTokenPub == nil {
-			sJWTAccessTokenPub, err = s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPub)
+			sJWTAccessTokenPub, err = s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTAccessTokenPub)
 			if err != nil {
 				logrusc.WithFunc(pkgPath, "UserSrvMiddleware").
 					WithFields(logrus.Fields{

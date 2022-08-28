@@ -12,12 +12,13 @@ import (
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"wz2100.net/microlobby/service/auth/v1/argon2"
 	"wz2100.net/microlobby/service/auth/v1/config"
 	"wz2100.net/microlobby/service/auth/v1/db"
-	"wz2100.net/microlobby/shared/argon2"
+	proxyConfig "wz2100.net/microlobby/service/http_proxy/config"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/userpb/v1"
@@ -60,7 +61,7 @@ func (h *Handler) Start() error {
 	h.logrus = logrus
 
 	ctx := component.RegistryToContext(utils.CtxForService(context.Background()), h.cRegistry)
-	s, err := component.SettingsV1(h.cRegistry)
+	s, err := scomponent.SettingsV1(h.cRegistry)
 	if err != nil {
 		return errors.FromError(err)
 	}
@@ -89,46 +90,46 @@ func (h *Handler) Start() error {
 		}
 	}
 
-	_, ok := h.settings[defs.SettingNameJWTRefreshTokenPub]
-	_, ok2 := h.settings[defs.SettingNameJWTRefreshTokenPriv]
+	_, ok := h.settings[proxyConfig.SettingNameJWTRefreshTokenPub]
+	_, ok2 := h.settings[proxyConfig.SettingNameJWTRefreshTokenPriv]
 	if !ok || !ok2 {
-		spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPub)
-		spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPriv)
+		spub, epub := s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTRefreshTokenPub)
+		spri, epri := s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTRefreshTokenPriv)
 
 		if epub != nil || epri != nil {
 			// Wait for http_proxy to generate the key
 			time.Sleep(5 * time.Second)
 
-			spub, epub = s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPub)
-			spri, epri = s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPriv)
+			spub, epub = s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTRefreshTokenPub)
+			spri, epri = s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTRefreshTokenPriv)
 			if epub != nil || epri != nil {
 				return errors.New(h.svcName, "Failed to get keys", http.StatusInternalServerError)
 			}
 		}
 
-		h.settings[defs.SettingNameJWTRefreshTokenPub] = spub.Content
-		h.settings[defs.SettingNameJWTRefreshTokenPriv] = spri.Content
+		h.settings[proxyConfig.SettingNameJWTRefreshTokenPub] = spub.Content
+		h.settings[proxyConfig.SettingNameJWTRefreshTokenPriv] = spri.Content
 	}
 
-	_, ok = h.settings[defs.SettingNameJWTAccessTokenPub]
-	_, ok2 = h.settings[defs.SettingNameJWTAccessTokenPriv]
+	_, ok = h.settings[proxyConfig.SettingNameJWTAccessTokenPub]
+	_, ok2 = h.settings[proxyConfig.SettingNameJWTAccessTokenPriv]
 	if !ok || !ok2 {
-		spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPub)
-		spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPriv)
+		spub, epub := s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTAccessTokenPub)
+		spri, epri := s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTAccessTokenPriv)
 
 		if epub != nil || epri != nil {
 			// Wait for http_proxy to generate the key
 			time.Sleep(5 * time.Second)
 
-			spub, epub = s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPub)
-			spri, epri = s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPriv)
+			spub, epub = s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTAccessTokenPub)
+			spri, epri = s.Get(ctx, "", "", proxyConfig.Name, proxyConfig.SettingNameJWTAccessTokenPriv)
 			if epub != nil || epri != nil {
 				return errors.New(h.svcName, "Failed to get keys", http.StatusInternalServerError)
 			}
 		}
 
-		h.settings[defs.SettingNameJWTAccessTokenPub] = spub.Content
-		h.settings[defs.SettingNameJWTAccessTokenPriv] = spri.Content
+		h.settings[proxyConfig.SettingNameJWTAccessTokenPub] = spub.Content
+		h.settings[proxyConfig.SettingNameJWTAccessTokenPriv] = spri.Content
 	}
 
 	return nil
@@ -217,7 +218,7 @@ func (s *Handler) Register(ctx context.Context, in *authservicepb.RegisterReques
 }
 
 func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservicepb.Token) error {
-	pRefreshKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPriv]
+	pRefreshKey, ok := s.settings[proxyConfig.SettingNameJWTRefreshTokenPriv]
 	if !ok {
 		return errors.New(s.svcName, "no signinkey, can't generate the access token, check again later", http.StatusTooEarly)
 	}
@@ -243,7 +244,7 @@ func (s *Handler) genTokens(ctx context.Context, user *db.User, out *authservice
 		return err
 	}
 
-	pAccessKey, ok := s.settings[defs.SettingNameJWTAccessTokenPriv]
+	pAccessKey, ok := s.settings[proxyConfig.SettingNameJWTAccessTokenPriv]
 	if !ok {
 		return errors.New(s.svcName, "can't generate the access token, check again later", http.StatusTooEarly)
 	}
@@ -297,7 +298,7 @@ func (s *Handler) Login(ctx context.Context, in *authservicepb.LoginRequest, out
 }
 
 func (s *Handler) Refresh(ctx context.Context, in *authservicepb.Token, out *authservicepb.Token) error {
-	pRefreshPubKey, ok := s.settings[defs.SettingNameJWTRefreshTokenPub]
+	pRefreshPubKey, ok := s.settings[proxyConfig.SettingNameJWTRefreshTokenPub]
 	if !ok {
 		return errors.New(s.svcName, "can't check the refresh token, check again later", http.StatusTooEarly)
 	}

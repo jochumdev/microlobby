@@ -15,9 +15,10 @@ import (
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"wz2100.net/microlobby/service/http_proxy/config"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
 	middlewareGin "wz2100.net/microlobby/shared/middleware/gin"
 	"wz2100.net/microlobby/shared/serviceregistry"
 	"wz2100.net/microlobby/shared/utils"
@@ -53,7 +54,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 	globalGroup := r.Group("")
 	globalGroup.Use(middlewareGin.UserSrvMiddleware(cregistry))
 
-	proxyAuthGroup := globalGroup.Group(fmt.Sprintf("/%s", defs.ProxyURIHttpProxy))
+	proxyAuthGroup := globalGroup.Group(fmt.Sprintf("/%s", config.ProxyURI))
 	proxyAuthGroup.Use(middlewareGin.RequireUserMiddleware(cregistry))
 
 	proxyAuthGroup.GET("/v1/health", h.getHealth)
@@ -115,16 +116,16 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 
 	go func() {
 		ctx := component.RegistryToContext(utils.CtxForService(context.Background()), cregistry)
-		s, err := component.SettingsV1(cregistry)
+		s, err := scomponent.SettingsV1(cregistry)
 		if err != nil {
 			panic(err)
 		}
 
-		_, ok := h.settings[defs.SettingNameJWTRefreshTokenPub]
-		_, ok2 := h.settings[defs.SettingNameJWTRefreshTokenPriv]
+		_, ok := h.settings[config.SettingNameJWTRefreshTokenPub]
+		_, ok2 := h.settings[config.SettingNameJWTRefreshTokenPriv]
 		if !ok || !ok2 {
-			spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPub)
-			spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTRefreshTokenPriv)
+			spub, epub := s.Get(ctx, "", "", config.Name, config.SettingNameJWTRefreshTokenPub)
+			spri, epri := s.Get(ctx, "", "", config.Name, config.SettingNameJWTRefreshTokenPriv)
 			if epub != nil || epri != nil {
 				pubKey, privKey, err := ed25519.GenerateKey(nil)
 				if err != nil {
@@ -135,8 +136,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				npub := pubKey
 
 				spri, epri = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-					Service:     defs.ServiceHttpProxy,
-					Name:        defs.SettingNameJWTRefreshTokenPriv,
+					Service:     config.Name,
+					Name:        config.SettingNameJWTRefreshTokenPriv,
 					Content:     npri,
 					RolesRead:   []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
@@ -145,7 +146,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
 						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
 							WithField("error", epri).
-							WithField("setting", defs.SettingNameJWTRefreshTokenPriv).
+							WithField("setting", config.SettingNameJWTRefreshTokenPriv).
 							Error(epri)
 					} else {
 						log.Error(epri)
@@ -154,8 +155,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				}
 
 				spub, epub = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-					Service:     defs.ServiceHttpProxy,
-					Name:        defs.SettingNameJWTRefreshTokenPub,
+					Service:     config.Name,
+					Name:        config.SettingNameJWTRefreshTokenPub,
 					Content:     npub,
 					RolesRead:   []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
@@ -164,7 +165,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
 						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
 							WithField("error", epub).
-							WithField("setting", defs.SettingNameJWTRefreshTokenPub).
+							WithField("setting", config.SettingNameJWTRefreshTokenPub).
 							Error(epub)
 					} else {
 						log.Error(epub)
@@ -173,15 +174,15 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				}
 			}
 
-			h.settings[defs.SettingNameJWTRefreshTokenPub] = spub.Content
-			h.settings[defs.SettingNameJWTRefreshTokenPriv] = spri.Content
+			h.settings[config.SettingNameJWTRefreshTokenPub] = spub.Content
+			h.settings[config.SettingNameJWTRefreshTokenPriv] = spri.Content
 		}
 
-		_, ok = h.settings[defs.SettingNameJWTAccessTokenPub]
-		_, ok2 = h.settings[defs.SettingNameJWTAccessTokenPriv]
+		_, ok = h.settings[config.SettingNameJWTAccessTokenPub]
+		_, ok2 = h.settings[config.SettingNameJWTAccessTokenPriv]
 		if !ok || !ok2 {
-			spub, epub := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPub)
-			spri, epri := s.Get(ctx, "", "", defs.ServiceHttpProxy, defs.SettingNameJWTAccessTokenPriv)
+			spub, epub := s.Get(ctx, "", "", config.Name, config.SettingNameJWTAccessTokenPub)
+			spri, epri := s.Get(ctx, "", "", config.Name, config.SettingNameJWTAccessTokenPriv)
 			if epub != nil || epri != nil {
 				pubKey, privKey, err := ed25519.GenerateKey(nil)
 				if err != nil {
@@ -192,8 +193,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				npub := pubKey
 
 				spri, epri = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-					Service:     defs.ServiceHttpProxy,
-					Name:        defs.SettingNameJWTAccessTokenPriv,
+					Service:     config.Name,
+					Name:        config.SettingNameJWTAccessTokenPriv,
 					Content:     npri,
 					RolesRead:   []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
 					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
@@ -202,7 +203,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
 						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
 							WithField("error", epri).
-							WithField("setting", defs.SettingNameJWTAccessTokenPriv).
+							WithField("setting", config.SettingNameJWTAccessTokenPriv).
 							Error(epri)
 					} else {
 						log.Error(epri)
@@ -211,8 +212,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				}
 
 				spub, epub = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-					Service:     defs.ServiceHttpProxy,
-					Name:        defs.SettingNameJWTAccessTokenPub,
+					Service:     config.Name,
+					Name:        config.SettingNameJWTAccessTokenPub,
 					Content:     npub,
 					RolesRead:   []string{auth.ROLE_USER, auth.ROLE_SERVICE},
 					RolesUpdate: []string{auth.ROLE_SUPERADMIN, auth.ROLE_SERVICE},
@@ -221,7 +222,7 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 					if cLogrus, lErr := component.Logrus(cregistry); lErr == nil {
 						cLogrus.WithFunc(pkgPath, "ConfigureRouter").
 							WithField("error", epub).
-							WithField("setting", defs.SettingNameJWTAccessTokenPub).
+							WithField("setting", config.SettingNameJWTAccessTokenPub).
 							Error(epub)
 					} else {
 						log.Error(epub)
@@ -230,8 +231,8 @@ func ConfigureRouter(cregistry *component.Registry, r *gin.Engine) *Handler {
 				}
 			}
 
-			h.settings[defs.SettingNameJWTAccessTokenPub] = spub.Content
-			h.settings[defs.SettingNameJWTAccessTokenPriv] = spri.Content
+			h.settings[config.SettingNameJWTAccessTokenPub] = spub.Content
+			h.settings[config.SettingNameJWTAccessTokenPriv] = spri.Content
 		}
 	}()
 

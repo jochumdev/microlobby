@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"wz2100.net/microlobby/service/http_proxy/config"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
 	"wz2100.net/microlobby/shared/serviceregistry"
 
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
@@ -56,7 +56,7 @@ func (h *Handler) getHealth(c *gin.Context) {
 	}
 
 	servicesNotThere := []string{}
-	for _, svcReq := range defs.ServicesRequired {
+	for _, svcReq := range config.ServicesRequired {
 		found := false
 		for _, svcFound := range foundServices {
 			if svcFound == svcReq {

@@ -8,6 +8,7 @@ import (
 
 	"go-micro.dev/v4/errors"
 	"wz2100.net/microlobby/service/lobby/v3/config"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
@@ -46,7 +47,7 @@ func (h *Handler) Start() error {
 	h.logrus = logrus
 
 	ctx := component.RegistryToContext(utils.CtxForService(context.Background()), h.cRegistry)
-	s, err := component.SettingsV1(h.cRegistry)
+	s, err := scomponent.SettingsV1(h.cRegistry)
 	if err != nil {
 		return errors.FromError(err)
 	}

@@ -9,10 +9,10 @@ import (
 	"go-micro.dev/v4/client"
 	"wz2100.net/microlobby/service/auth/v1/config"
 	authHandler "wz2100.net/microlobby/service/auth/v1/handler/auth"
+	infoHandler "wz2100.net/microlobby/service/http_proxy/handler/info"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
-	"wz2100.net/microlobby/shared/infoservice"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/authservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
@@ -21,10 +21,10 @@ import (
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), component.NewSettingsV1())
+	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), scomponent.NewSettingsV1())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceAuthV1),
+		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
 		micro.Flags(registry.Flags()...),
@@ -102,7 +102,7 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, defs.ProxyURIAuth, "v1", routes)
+			infoService := infoHandler.NewHandler(registry, config.ProxyURI, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
 			if err := authH.Start(); err != nil {

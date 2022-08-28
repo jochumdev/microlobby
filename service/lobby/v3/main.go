@@ -6,20 +6,20 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
+	infoHandler "wz2100.net/microlobby/service/http_proxy/handler/info"
 	"wz2100.net/microlobby/service/lobby/v3/config"
 	lobbyHandler "wz2100.net/microlobby/service/lobby/v3/handler/lobby"
+	scomponent "wz2100.net/microlobby/service/settings/v1/component"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
-	"wz2100.net/microlobby/shared/infoservice"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewSettingsV1())
+	registry := component.NewRegistry(component.NewLogrusStdOut(), scomponent.NewSettingsV1())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceLobbyV3),
+		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
 		micro.Flags(registry.Flags()...),
@@ -40,7 +40,7 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, defs.ProxyURILobby, "v3", routes)
+			infoService := infoHandler.NewHandler(registry, config.ProxyURI, "v3", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
 			if err := lobbyH.Start(); err != nil {

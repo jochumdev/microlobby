@@ -13,7 +13,7 @@ RUN adduser -D -g '' appuser
 COPY ./go.mod /microlobby/go.mod
 COPY ./go.sum /microlobby/go.sum
 COPY ./shared /microlobby/shared
-COPY ./service/${SERVICE} /microlobby/service/${SERVICE}
+COPY ./service /microlobby/service
 
 WORKDIR /microlobby/service/${SERVICE}
 

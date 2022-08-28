@@ -101,10 +101,15 @@ func CallEndPoints(ctx context.Context, cRegistry *component.Registry, endpoint 
 
 func NewHandlerWrapper(cRegistry *component.Registry, routes []*infoservicepb.RoutesReply_Route) server.HandlerWrapper {
 	preEndpoints := make(map[string]string)
+	postEndpoints := make(map[string]string)
 
 	for _, r := range routes {
 		if len(r.PreEndpoint) > 0 {
 			preEndpoints[r.Endpoint] = r.PreEndpoint
+		}
+
+		if len(r.PostEndpoint) > 0 {
+			postEndpoints[r.Endpoint] = r.PostEndpoint
 		}
 	}
 
@@ -119,7 +124,19 @@ func NewHandlerWrapper(cRegistry *component.Registry, routes []*infoservicepb.Ro
 			}
 
 			// If no error happened execute the original function.
-			return h(ctx, req, rsp)
+			if err := h(ctx, req, rsp); err != nil {
+				return err
+			}
+
+			// Wrap into a post call?
+			if v, ok := postEndpoints[req.Endpoint()]; ok && len(v) > 0 {
+				tmp := &emptypb.Empty{}
+				if err := CallEndPoints(utils.CtxForService(ctx), cRegistry, postEndpoints[req.Endpoint()], req.Body(), tmp); err != nil {
+					return err
+				}
+			}
+
+			return nil
 		}
 	}
 }

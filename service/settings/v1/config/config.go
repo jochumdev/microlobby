@@ -1,4 +1,7 @@
 package config
 
-// Version is the version of this package
-const Version = "not set"
+const (
+	Name     = "microlobby.settings.v1"
+	ProxyURI = "settings"
+	Version  = "not set"
+)

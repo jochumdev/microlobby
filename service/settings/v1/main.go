@@ -7,12 +7,11 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
+	infoHandler "wz2100.net/microlobby/service/http_proxy/handler/info"
 	"wz2100.net/microlobby/service/settings/v1/config"
 	settingsHandler "wz2100.net/microlobby/service/settings/v1/handler/settings"
 	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
-	"wz2100.net/microlobby/shared/defs"
-	"wz2100.net/microlobby/shared/infoservice"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
@@ -25,7 +24,7 @@ func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN())
 
 	service := micro.NewService(
-		micro.Name(defs.ServiceSettingsV1),
+		micro.Name(config.Name),
 		micro.Version(config.Version),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Flags(registry.Flags()...),
@@ -76,7 +75,7 @@ func main() {
 			}
 
 			s := service.Server()
-			infoService := infoservice.NewHandler(registry, defs.ProxyURISettings, "v1", routes)
+			infoService := infoHandler.NewHandler(registry, config.ProxyURI, "v1", routes)
 			infoservicepb.RegisterInfoServiceHandler(s, infoService)
 
 			settingsH, err := settingsHandler.NewHandler()
