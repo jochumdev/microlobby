@@ -19,11 +19,10 @@ tasks:
         var: {{.SERVICES}}
     cmds:
       - task: build:volumes
-      - task: build:download
       - task: build:tools
+      - task: build:download
       - task: build:protoc
       - task: build
-      - docker-compose --profile app up -d postgresd
       - task: up
       - task: ps
 
@@ -53,12 +52,12 @@ tasks:
       - | 
         # Run with docker
         test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose --profile app build
+        docker-compose build
 
   build:volumes:
     desc: Create volumes
     cmds:
-      - docker-compose up -d --no-build
+      - docker-compose up -d nats
 
   build:download:
     desc: Download go dependencies
@@ -101,7 +100,9 @@ tasks:
       test -z "{{.CMD_PODMAN}}" && exit 0
       GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
       test -f "${GOVOL}/bin/protoc-gen-micro" && exit 0
+      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go get google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
       podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
+      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go get github.com/go-micro/generator/cmd/protoc-gen-micro && \
       podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install github.com/go-micro/generator/cmd/protoc-gen-micro
     - | 
       # Run with docker
@@ -149,7 +150,7 @@ tasks:
         # Run with docker
         test -n "{{.CMD_PODMAN}}" && exit 0
         test -n "{{.SERVICE}}" -a -d service/{{.SERVICE}} || exit 123
-        docker-compose --profile app build {{.SERVICE}}
+        docker-compose build {{.SERVICE}}
 
   service:buildrun:
     desc: Build and run a service using env var "SERVICE"
@@ -224,7 +225,7 @@ tasks:
     deps:
       - check:toolchain
     cmds:
-      - docker-compose --profile app up -d --remove-orphans
+      - DOCKER_BUILDKIT=0 docker-compose up -d --remove-orphans
   
   ps:
     desc: Show running containers
@@ -236,7 +237,7 @@ tasks:
     deps:
       - check:toolchain
     cmds:
-      - docker-compose --profile app down
+      - docker-compose down
 
   upgrade:deps:
     desc: Update all go dependencies
@@ -264,6 +265,5 @@ tasks:
   rm:
     desc: "Remove all persistent data"
     cmds:
-      - task: down
       - |
         docker-compose down --volumes

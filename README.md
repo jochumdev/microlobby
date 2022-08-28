@@ -71,7 +71,9 @@ It provides 4 routes:
 
 - [Task](https://taskfile.dev/#/installation)
 - podman/docker
-- docker-compose 1.29+ (cause of --profile app)
+- docker-compose
+
+Latest docker-compose (v2.7.0) works with podman >=4.1.1 only, for Debian testing I've used [Method 2: Ansible](https://computingforgeeks.com/how-to-install-podman-on-debian/) way to install latest podman.
 
 ### Run
 

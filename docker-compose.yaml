@@ -9,8 +9,6 @@ services:
       - "4222:4222"
       - "6222:6222"
       - "8222:8222"
-    profiles:
-      - app
 
   postgresd:
     restart: unless-stopped
@@ -25,8 +23,6 @@ services:
       - 5432:5432
     volumes:
       - postgresd:/var/lib/postgresql/data:cached
-    profiles:
-      - app
 
   pgadmin:
     restart: unless-stopped
@@ -40,8 +36,6 @@ services:
       - postgresd
     volumes:
       - pgadmin:/var/lib/pgadmin
-    profiles:
-      - app
 
   http_proxy:
     # restart: unless-stopped
@@ -63,8 +57,6 @@ services:
       - 8080:8080
     depends_on:
       - nats
-    profiles:
-      - app
 
   gamedb_v1:
     # restart: unless-stopped
@@ -86,8 +78,6 @@ services:
     depends_on:
       - nats
       - postgresd
-    profiles:
-      - app
 
   lobby_v3:
     # restart: unless-stopped
@@ -109,8 +99,6 @@ services:
     depends_on:
       - nats
       - postgresd
-    profiles:
-      - app
 
   badwords_v1:
     # restart: unless-stopped
@@ -129,8 +117,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
     depends_on:
       - nats
-    profiles:
-      - app
 
   auth_v1:
     # restart: unless-stopped
@@ -152,8 +138,6 @@ services:
     depends_on:
       - nats
       - postgresd
-    profiles:
-      - app
 
   settings_v1:
     # restart: unless-stopped
@@ -175,8 +159,6 @@ services:
     depends_on:
       - nats
       - postgresd
-    profiles:
-      - app
 
   builder:
     restart: "no"
@@ -189,7 +171,7 @@ services:
       - "go:/go:rw"
       - ".:/microlobby:rw"
     profiles:
-      - tools
+      - app
 
   dashboard:
     image: xpunch/go-micro-dashboard:latest
@@ -206,8 +188,6 @@ services:
       - 8082:8082
     depends_on:
       - nats
-    profiles:
-      - app
 
 volumes:
   go: {}
