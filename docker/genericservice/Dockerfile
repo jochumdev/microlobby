@@ -1,21 +1,15 @@
+ARG DOCKER_IO=docker.io
+ARG DOCKER_ORG_JO_MICRO=docker.io/jo-micro
+
 # STEP 1 build executable binary
-FROM golang:1.19-alpine as builder
+FROM ${DOCKER_ORG_JO_MICRO}/builder:latest AS builder
 
+# Create appuser (/etc/passwd entry for the runner container)
+RUN useradd appuser
+
+COPY . /code
 ARG SERVICE
-
-# Install SSL ca certificates
-RUN apk add --update git ca-certificates
-
-# Create appuser
-RUN adduser -D -g '' appuser
-
-# Copy shared/ and $PACKAGE/ to /microlobby - this speeds up builds and we build less
-COPY ./go.mod /microlobby/go.mod
-COPY ./go.sum /microlobby/go.sum
-COPY ./shared /microlobby/shared
-COPY ./service /microlobby/service
-
-WORKDIR /microlobby/service/${SERVICE}
+WORKDIR /code/service/${SERVICE}
 
 # RUN go mod download
 ENV GOPATH="/go"
@@ -24,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -ldflags="
 
 # STEP 2 build a small image
 # start from busybox
-FROM busybox
+FROM ${DOCKER_IO}/library/busybox:latest
 
 ARG SERVICE
 

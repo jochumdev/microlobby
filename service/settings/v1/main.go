@@ -1,21 +1,18 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
-	infoHandler "wz2100.net/microlobby/service/http_proxy/handler/info"
+	"go-micro.dev/v4/logger"
+	"jochum.dev/jo-micro/auth2"
+	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/settings/v1/config"
 	settingsHandler "wz2100.net/microlobby/service/settings/v1/handler/settings"
-	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
-	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
-	"wz2100.net/microlobby/shared/utils"
 )
 
 const pkgPath = "wz2100.net/microlobby/service/settings/v1"
@@ -23,73 +20,105 @@ const pkgPath = "wz2100.net/microlobby/service/settings/v1"
 func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN())
 
+	auth2ClientReg := auth2.ClientAuthRegistry()
+
 	service := micro.NewService(
 		micro.Name(config.Name),
 		micro.Version(config.Version),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Flags(registry.Flags()...),
-		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry)),
+		micro.Flags(auth2ClientReg.MergeFlags(registry.Flags())...),
 	)
 	registry.SetService(service)
 
-	routes := []*infoservicepb.RoutesReply_Route{
-		{
-			Method:          http.MethodGet,
-			Path:            "/",
-			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.List),
-			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
-			Params:          []string{"id", "ownerId", "service", "name", "limit", "offset"},
-		},
-		{
-			Method:          http.MethodPost,
-			Path:            "/",
-			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Create),
-			IntersectsRoles: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
-		},
-		{
-			Method:          http.MethodGet,
-			Path:            "/:id",
-			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Get),
-			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
-			Params:          []string{"id", "ownerId", "service", "name"},
-		},
-		{
-			Method:          http.MethodPut,
-			Path:            "/:id",
-			Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Update),
-			IntersectsRoles: []string{auth.ROLE_USER, auth.ROLE_SERVICE},
-			Params:          []string{"id"},
-		},
-	}
-
 	service.Init(
+		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry), auth2ClientReg.Wrapper()),
 		micro.Action(func(c *cli.Context) error {
 			if err := registry.Init(c); err != nil {
 				return err
 			}
 
-			logrus, err := component.Logrus(registry)
+			cLogrus, err := component.Logrus(registry)
 			if err != nil {
-				log.Fatal(err)
-				return err
+				logger.Fatal(err)
 			}
 
-			s := service.Server()
-			infoService := infoHandler.NewHandler(registry, config.ProxyURI, "v1", routes)
-			infoservicepb.RegisterInfoServiceHandler(s, infoService)
+			if err := auth2ClientReg.Init(c, service); err != nil {
+				cLogrus.Logger().Fatal(err)
+			}
+
+			authVerifier := endpointroles.NewVerifier(
+				endpointroles.WithLogrus(cLogrus.Logger()),
+			)
+			authVerifier.AddRules(
+				endpointroles.RouterRule,
+				endpointroles.NewRule(
+					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.List),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Create),
+					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Get),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Update),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Upsert),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+			)
+			auth2ClientReg.Plugin().SetVerifier(authVerifier)
+
+			// Register with https://jochum.dev/jo-micro/router
+			r := router.NewHandler(
+				config.RouterURI,
+				router.NewRoute(
+					router.Method(router.MethodGet),
+					router.Path("/"),
+					router.Endpoint(settingsservicepb.SettingsV1Service.List),
+					router.Params("id", "ownerId", "service", "name", "limit", "offset"),
+				),
+				router.NewRoute(
+					router.Method(router.MethodPost),
+					router.Path("/"),
+					router.Endpoint(settingsservicepb.SettingsV1Service.Create),
+				),
+				router.NewRoute(
+					router.Method(router.MethodGet),
+					router.Path("/:id"),
+					router.Endpoint(settingsservicepb.SettingsV1Service.Get),
+					router.Params("id", "ownerId", "service", "name"),
+				),
+				router.NewRoute(
+					router.Method(router.MethodPut),
+					router.Path("/:id"),
+					router.Endpoint(settingsservicepb.SettingsV1Service.Update),
+					router.Params("id"),
+				),
+			)
+			r.RegisterWithServer(service.Server())
 
 			settingsH, err := settingsHandler.NewHandler()
 			if err != nil {
-				logrus.WithFunc(pkgPath, "main").Fatal(err)
+				cLogrus.WithFunc(pkgPath, "main").Fatal(err)
 				return err
 			}
-			settingsservicepb.RegisterSettingsV1ServiceHandler(s, settingsH)
+			settingsservicepb.RegisterSettingsV1ServiceHandler(service.Server(), settingsH)
 
 			return nil
 		}),
 	)
 
 	if err := service.Run(); err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
+	}
+
+	if err := auth2ClientReg.Stop(); err != nil {
+		logger.Fatal(err)
 	}
 }

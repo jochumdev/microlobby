@@ -2,12 +2,20 @@
 
 MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserver-ng](https://github.com/Warzone2100/wzlobbyserver-ng).
 
-## Features
+## Why another lobby
+
+- wzlobbyserver-ng is 10 years old, time for a new one
+- Allows registering names
+- Allows to verify users
+- Adds a new REST Protocol
+- Features are easy to add, like GameNetworkSockets, TOTP and others
+
+## Technical features
 
 - Requires only:
-  - Podman/Docker
+  - podman
   - docker-compose
-  - task
+  - [Task](https://taskfile.dev/#/installation)
 - Everything in containers, leaves nothing on the Host except Podman/Docker volumes. "task rm" removes everything.
 - Automated migrations, migrating on start
 - gRPC+Protobuf internal, JSON/XML external
@@ -17,7 +25,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 - Loosely coupled Microservices
 - Fast to copy&paste a service, easy to start a new one
 - Event System as example for IRC/Discord bots
-- All communication over NATS. It scales!
+- Registry and Broker over NATS
 - Scale your db and everything else scales easy as it needs no Filesystem
 
 ## Basic Architecture
@@ -70,20 +78,23 @@ It provides 4 routes:
 ### Prerequesits
 
 - [Task](https://taskfile.dev/#/installation)
-- podman/docker
+- podman
 - docker-compose
 
-Latest docker-compose (v2.7.0) works with podman >=4.1.1 only, for Debian testing I've used [Method 2: Ansible](https://computingforgeeks.com/how-to-install-podman-on-debian/) way to install latest podman.
+Latest docker-compose (v2.7.0) works with podman >=4.1.1 only, for Debian testing I've used [Method 2: Ansible](https://computingforgeeks.com/how-to-install-podman-on-debian/) way to install the latest podman.
 
 ### Run
 
-To run this you have to do the following steps:
+To run this you have to do the following steps.
 
 ```bash
 git clone https://github.com/pcdummy/microlobby.git
 cd microlobby
+# To develop you don't need to change anything, for production you have to change all passwords
 cp .env.sample .env
 task
+# Some containers don't start on first run, start them again
+task up
 ```
 
 Now enjoy the [health api](http://localhost:8080/health)

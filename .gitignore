@@ -1,3 +1,10 @@
+.task/
+
 *.pb.go
 *.pb.micro.go
 .env
+
+!.gitkeep
+
+go.work
+go.work.sum

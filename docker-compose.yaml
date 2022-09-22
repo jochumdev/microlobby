@@ -1,7 +1,8 @@
 version: '3'
 services:
   nats:
-    image: nats:2.8.4
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_IO}/library/nats:2.8.4-alpine
     command: -js -sd /data
     volumes:
       - nats:/data
@@ -11,10 +12,8 @@ services:
       - "8222:8222"
 
   postgresd:
-    restart: unless-stopped
-    build:
-      context: ./docker/postgresd
-    image: microlobby-postgresd:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-postgresd:${MICROLOBBY_POSTGRES_TAG}
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -25,8 +24,8 @@ services:
       - postgresd:/var/lib/postgresql/data:cached
 
   pgadmin:
-    restart: unless-stopped
-    image: docker.io/dpage/pgadmin4:6
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_IO}/dpage/pgadmin4:6
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
@@ -37,41 +36,19 @@ services:
     volumes:
       - pgadmin:/var/lib/pgadmin
 
-  http_proxy:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: http_proxy
-    image: microlobby-service-http_proxy:latest
-    environment:
-      - MICRO_SERVER_ADDRESS=0.0.0.0:8080
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
-      - LOG_LEVEL=${LOG_LEVEL}
-    ports:
-      - 8080:8080
-    depends_on:
-      - nats
-
   gamedb_v1:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: gamedb/v1
-    image: microlobby-service-gamedb-v1:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-gamedb-v1:latest
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
       - LOG_LEVEL=${LOG_LEVEL}
       - DATABASE_DEBUG=true
       - DATABASE_URL=${ML_GAMEDB_DB_URL}
@@ -80,19 +57,18 @@ services:
       - postgresd
 
   lobby_v3:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: lobby/v3
-    image: microlobby-service-lobby-v3:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-lobby-v3:latest
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - 9990:9990
@@ -101,58 +77,59 @@ services:
       - postgresd
 
   badwords_v1:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: badwords/v1
-    image: microlobby-service-badwords-v1:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-badwords-v1:latest
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
       - LOG_LEVEL=${LOG_LEVEL}
     depends_on:
       - nats
 
-  auth_v1:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: auth/v1
-    image: microlobby-service-auth-v1:latest
+  auth:
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_JO_MICRO}/auth2-sql:0.2.0
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
-      - LOG_LEVEL=${LOG_LEVEL}
-      - DATABASE_DEBUG=true
-      - DATABASE_URL=${ML_AUTH_DB_URL}
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_DATABASE_DEBUG=${MICRO_AUTH2_DATABASE_DEBUG}
+      - MICRO_AUTH2_DATABASE_URL=${MICRO_AUTH2_DATABASE_URL}
+      - MICRO_AUTH2_JWT_ACCESS_EXPIRY=${MICRO_AUTH2_JWT_ACCESS_EXPIRY}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_AUTH2_JWT_REFRESH_EXPIRY=${MICRO_AUTH2_JWT_REFRESH_EXPIRY}
+      - MICRO_AUTH2_JWT_REFRESH_PRIV_KEY=${MICRO_AUTH2_JWT_REFRESH_PRIV_KEY}
+      - MICRO_AUTH2_JWT_REFRESH_PUB_KEY=${MICRO_AUTH2_JWT_REFRESH_PUB_KEY}
+      - MICRO_AUTH2_LOG_LEVEL=${LOG_LEVEL}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
     depends_on:
-      - nats
       - postgresd
+      - nats
 
   settings_v1:
-    # restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/genericservice/Dockerfile
-      args:
-        SERVICE: settings/v1
-    image: microlobby-service-settings-v1:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-settings-v1:latest
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
       - LOG_LEVEL=${LOG_LEVEL}
       - DATABASE_DEBUG=true
       - DATABASE_URL=${ML_SETTINGS_DB_URL}
@@ -160,27 +137,15 @@ services:
       - nats
       - postgresd
 
-  builder:
-    restart: "no"
-    build:
-      context: ./docker/builder
-    image: microlobby-builder:latest
-    environment:
-      - GOPROXY=https://proxy.golang.org,direct
-    volumes:
-      - "go:/go:rw"
-      - ".:/microlobby:rw"
-    profiles:
-      - app
-
   dashboard:
-    image: xpunch/go-micro-dashboard:latest
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_IO}/xpunch/go-micro-dashboard:latest
     environment:
-      - MICRO_TRANSPORT=grpc
-      - MICRO_REGISTRY=nats
-      - MICRO_REGISTRY_ADDRESS=nats:4222
-      - MICRO_BROKER=nats
-      - MICRO_BROKER_ADDRESS=nats:4222
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
       - SERVER_ADDRESS=:8082
       - SERVER_AUTH_USERNAME=${DASHBOARD_USER}
       - SERVER_AUTH_PASSWORD=${DASHBOARD_PASSWORD}
@@ -189,8 +154,28 @@ services:
     depends_on:
       - nats
 
+  router:
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_JO_MICRO}/router:0.3.4
+    environment:
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_ROUTER=${MICRO_AUTH2_ROUTER}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
+      - MICRO_ROUTER_LISTEN=:8080
+      - MICRO_ROUTER_LOG_LEVEL=${LOG_LEVEL}
+    ports:
+      - 8080:8080
+    depends_on:
+      - nats
+
 volumes:
-  go: {}
   nats: {}
   postgresd: {}
   pgadmin: {}

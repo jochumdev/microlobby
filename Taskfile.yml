@@ -5,21 +5,14 @@ dotenv: [".env"]
 vars:
   CMD_PODMAN:
     sh: command -v podman
-  CMD_DOCKER:
-    sh: command -v docker
-  CMD_DCOMPOSE:
-    sh: command -v docker-compose
 
 tasks:
   default:
     desc: Build and run microlobby
-    env:
-      # For build:protoc
-      SERVICE: 
-        var: {{.SERVICES}}
     cmds:
-      - task: build:volumes
-      - task: build:tools
+      - task: sysctl
+      - task: build:postgresd
+      - task: build:volume
       - task: build:download
       - task: build:protoc
       - task: build
@@ -28,242 +21,159 @@ tasks:
 
   sysctl:
     desc: Run sysctl to allow >=80 ports
-    deps:
-      - check:toolchain
     cmds:
-      - |
-        # Run for podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+      - sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+    preconditions:
+      - test -n "{{.CMD_PODMAN}}"
+    status:
+      - test "x80" = "x$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)"
 
-  build:
-    desc: Build all containers
-    deps:
-      - check:toolchain
+  build:volume:
+    run: "once"
     cmds:
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        for svc in {{.SERVICES}}; do 
-          echo ${svc}
-          podman build -v "${GOVOL}:/go:rw" -t localhost/microlobby-service-$(echo ${svc} | sed 's#/#-#g'):latest --build-arg=SERVICE=${svc} -f docker/genericservice/Dockerfile . || exit 1
-        done
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose build
+      - podman volume inspect microlobby_go 1>/dev/null 2>&1 || podman volume create microlobby_go
 
-  build:volumes:
-    desc: Create volumes
+  build:postgresd:
     cmds:
-      - docker-compose up -d nats
+      - podman build --build-arg=DOCKER_IO={{.DOCKER_IO}} --build-arg=TAG={{.DOCKER_POSTGRES_TAG}} -t {{.DOCKER_ORG_WARZONE}}/microlobby-postgresd:{{.MICROLOBBY_POSTGRES_TAG}} ./docker/postgresd
+
+  builder:
+    desc: Run something in the builder container for example "task builder -- go get -u ./..."
+    cmds:
+      - podman run --rm -v "{{.PWD}}:/code" -v "{{.VOLUME_PATH}}:/go:rw" -v "{{.BUILD_MOUNT_FOLDER_INT}}:{{.BUILD_MOUNT_FOLDER_INT}}" {{.DOCKER_ORG_JO_MICRO}}/builder:latest {{.CLI_ARGS}}
+    vars:
+      VOLUME_PATH:
+        sh: podman volume inspect microlobby_go --format "{{"{{"}}.Mountpoint{{"}}"}}"
+      BUILD_MOUNT_FOLDER_INT:
+        sh: realpath {{.BUILD_MOUNT_FOLDER}}
+    preconditions:
+      - test -n "{{.CLI_ARGS}}"
 
   build:download:
     desc: Download go dependencies
-    deps:
-      - check:toolchain
     cmds:
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder sh -c "cd /microlobby && go mod download"
-
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose --profile tools run --rm builder sh -c "go mod download"
-
-  build:tools:
-    desc: Build tools
-    deps:
-     - check:toolchain
-    cmds:
-    
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        podman build -v "${GOVOL}:/go:rw" -t localhost/microlobby-builder:latest -f docker/builder/Dockerfile ./docker/builder/
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose --profile tools build
-      - task: build:protoc-gen-micro
-
-  build:protoc-gen-micro:
-    run: once
-    cmds:
-    - |
-      # Run with podman
-      test -z "{{.CMD_PODMAN}}" && exit 0
-      GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-      test -f "${GOVOL}/bin/protoc-gen-micro" && exit 0
-      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go get google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
-      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
-      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go get github.com/go-micro/generator/cmd/protoc-gen-micro && \
-      podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder go install github.com/go-micro/generator/cmd/protoc-gen-micro
-    - | 
-      # Run with docker
-      test -n "{{.CMD_PODMAN}}" && exit 0
-      GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-      test -f "${GOVOL}/bin/protoc-gen-micro" && exit 0
-      docker-compose --profile tools run --rm builder go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
-      docker-compose --profile tools run --rm builder go install github.com/go-micro/generator/cmd/protoc-gen-micro
+      - task: builder
+        vars:
+          CLI_ARGS: "go mod download"
 
   build:protoc:
     desc: Generate shared protobuf files and those for a service
-    deps:
-      - check:toolchain
+    sources:
+      - shared/proto/**/*.proto
+      - service/**/*.proto
     cmds:
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        podman run --rm -v "${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder /scripts/protogen.sh "{{.SERVICE}}"
-
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose --profile tools run --rm builder /scripts/protogen.sh "{{.SERVICE}}"
-
-  buildup:
-    desc: Run this when you changed something
-    cmds:
-      - task: build
-      - task: up
-      - task: ps
-
-  service:build:
-    desc: Build a specific service using env var "SERVICE"
-    deps:
-      - check:toolchain
-    cmds:
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        test -n "{{.SERVICE}}" -a -d service/{{.SERVICE}} || exit 123
-        podman build -v "${GOVOL}:/go:rw" -t localhost/microlobby-service-$(echo {{.SERVICE}} | sed 's#/#-#g'):latest --build-arg=SERVICE={{.SERVICE}} -f docker/genericservice/Dockerfile . || exit 1
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        test -n "{{.SERVICE}}" -a -d service/{{.SERVICE}} || exit 123
-        docker-compose build {{.SERVICE}}
-
-  service:buildrun:
-    desc: Build and run a service using env var "SERVICE"
-    deps:
-      - check:toolchain
-    cmds:
-      - task: service:build
-      - task: up
-      - task: ps
-
-  service:http_proxy:
-    desc: Build and run/restart http_proxy
-    cmds:
-      - task: service:build
+      - task: builder
         vars:
-          SERVICE: http_proxy
-      - task: up
-      - task: ps
+          CLI_ARGS: "/scripts/protoc_gen.sh"
 
-  service:auth_v1:
-    desc: Build and run/restart auth/v1, restart http_proxy
+  build:service:
+    vars:
+      GOVOL_PATH:
+        sh: podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go
+      BUILD_MOUNT_FOLDER_INT:
+        sh: realpath {{.BUILD_MOUNT_FOLDER}}
     cmds:
-      - task: service:build
-        vars:
-          SERVICE: auth/v1
-      - task: up
-      - docker-compose stop http_proxy; docker-compose start http_proxy
-      - task: ps
+      - echo 'Service "{{.SERVICE}}"'
+      - podman build 
+          -v "{{.GOVOL_PATH}}:/go:rw" 
+          -v "{{.BUILD_MOUNT_FOLDER_INT}}:{{.BUILD_MOUNT_FOLDER_INT}}" 
+          -t {{.DOCKER_ORG_WARZONE}}/microlobby-$(echo {{.SERVICE}} | sed 's#/#-#g'):latest 
+          --build-arg=DOCKER_IO={{.DOCKER_IO}} 
+          --build-arg=DOCKER_ORG_JO_MICRO={{.DOCKER_ORG_JO_MICRO}} 
+          --build-arg=SERVICE={{.SERVICE}} 
+          -f docker/genericservice/Dockerfile 
+          . || exit 1
+    status:
+      - test -n "{{.SERVICE}}" -a -d service/{{.SERVICE}}
+      - test -z "{{.CMD_PODMAN}}"
+    preconditions:
+      - test -n "{{.SERVICE}}"
 
-  service:settings_v1:
-    desc: Build and run/restart settings/v1, restart http_proxy
+  build:service:gamedb/v1:
+    sources:
+      - ./go.sum
+      - ./service/gamedb/v1/**/*.go
+      - ./shared/**/*.go
     cmds:
-      - task: service:build
-        vars:
-          SERVICE: settings/v1
-      - task: up
-      - docker-compose stop http_proxy; docker-compose start http_proxy
-      - task: ps
-
-  service:badwords_v1:
-    desc: Build and run/restart badwords/v1, restart http_proxy
-    cmds:
-      - task: service:build
-        vars:
-          SERVICE: badwords/v1
-      - task: up
-      - docker-compose stop http_proxy; docker-compose start http_proxy
-      - task: ps
-
-  service:gamedb_v1:
-    desc: Build and run/restart gamedb/v1, restart http_proxy
-    cmds:
-      - task: service:build
+      - task: build:service
         vars:
           SERVICE: gamedb/v1
-      - task: up
-      - docker-compose stop http_proxy; docker-compose start http_proxy
-      - task: ps
 
-  service:lobby_v3:
-    desc: Build and run/restart lobby/v3, restart http_proxy
+  build:service:lobby/v3:
+    sources:
+      - ./go.sum
+      - ./service/lobby/v3/**/*.go
+      - ./shared/**/*.go
     cmds:
-      - task: service:build
+      - task: build:service
         vars:
           SERVICE: lobby/v3
-      - task: up
-      - docker-compose stop http_proxy; docker-compose start http_proxy
-      - task: ps
+
+  build:service:settings/v1:
+    sources:
+      - ./go.sum
+      - ./service/settings/v1/**/*.go
+      - ./shared/**/*.go
+    cmds:
+      - task: build:service
+        vars:
+          SERVICE: settings/v1
+
+  build:service:badwords/v1:
+    sources:
+      - ./go.sum
+      - ./service/badwords/v1/**/*.go
+      - ./shared/**/*.go
+    cmds:
+      - task: build:service
+        vars:
+          SERVICE: badwords/v1
+
+  build:
+    cmds:
+      - task: build:service:gamedb/v1
+      - task: build:service:lobby/v3
+      - task: build:service:settings/v1
+      - task: build:service:badwords/v1
 
   up:
     desc: Run all containers
     deps:
       - check:toolchain
     cmds:
-      - DOCKER_BUILDKIT=0 docker-compose up -d --remove-orphans
+      - podman-compose up -d --remove-orphans
   
   ps:
     desc: Show running containers
     cmds:
-      - docker-compose ps
+      - podman-compose ps
       
   down:
     desc: Stopp all containers
     deps:
       - check:toolchain
     cmds:
-      - docker-compose down
+      - podman-compose down
 
-  upgrade:deps:
+  update:
     desc: Update all go dependencies
-    deps:
-      - check:toolchain
     cmds:
-      - |
-        # Run with podman
-        test -z "{{.CMD_PODMAN}}" && exit 0
-        GOVOL=$(podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go)
-        podman run --rm -v ""${GOVOL}:/go:rw" -v ".:/microlobby:rw" localhost/microlobby-builder /scripts/upgrade_deps.sh "{{.SERVICES}}"
-
-      - | 
-        # Run with docker
-        test -n "{{.CMD_PODMAN}}" && exit 0
-        docker-compose --profile tools run --rm builder /scripts/upgrade_deps.sh "{{.SERVICES}}"
+      - task: builder
+        vars:
+          CLI_ARGS: "/scripts/upgrade_deps.sh"
 
   check:toolchain:
     run: once
-    desc: Check if you have all tools installed
     cmds:
-      - test -n "{{.CMD_PODMAN}}" -o -n "{{.CMD_DOCKER}}"
-      - test -n "{{.CMD_DCOMPOSE}}"
+      - test -n "{{.CMD_PODMAN}}"
+      - test -n "{{.CMD_PCOMPOSE}}"
+    vars:
+      CMD_PCOMPOSE:
+        sh: command -v podman-compose
 
   rm:
     desc: "Remove all persistent data"
     cmds:
-      - |
-        docker-compose down --volumes
+      - podman-compose down --volumes --rmi all
+      - podman volume rm microlobby_go || exit 0
+      - rm -rf ./.task

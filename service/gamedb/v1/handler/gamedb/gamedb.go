@@ -7,12 +7,11 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"go-micro.dev/v4/errors"
+	"jochum.dev/jo-micro/auth2"
 	"wz2100.net/microlobby/service/gamedb/v1/config"
 	"wz2100.net/microlobby/service/gamedb/v1/db"
-	"wz2100.net/microlobby/shared/auth"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
-	"wz2100.net/microlobby/shared/utils"
 )
 
 const pkgPath = config.PkgPath + "/handler/gamedb"
@@ -142,13 +141,13 @@ func (h *Handler) Start() error {
 func (h *Handler) Stop() error { return nil }
 
 func (h *Handler) List(ctx context.Context, in *gamedbpb.ListRequest, out *gamedbpb.ListResponse) error {
-	user, err := utils.CtxMetadataUser(ctx)
+	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	if in.History {
-		if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) {
+		if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
 			return errors.New(h.svcName, "Your not allowed to make history requests", http.StatusBadRequest)
 		}
 	}
@@ -192,13 +191,13 @@ func (h *Handler) List(ctx context.Context, in *gamedbpb.ListRequest, out *gamed
 }
 
 func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) error {
-	user, err := utils.CtxMetadataUser(ctx)
+	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	if dg.V3GameId != 0 {
-		if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) {
+		if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
 			return errors.New(h.svcName, "You'r not allowed to make V3GameID requests", http.StatusBadRequest)
 		}
 
@@ -218,7 +217,7 @@ func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) err
 		return errors.New(h.svcName, "No host player given or IP's don't match", http.StatusBadRequest)
 	}
 
-	if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) && nHostPlayer.UUID.String() != user.Id {
+	if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) && nHostPlayer.UUID.String() != user.Id {
 		return errors.New(h.svcName, "Your only allowed to host own games", http.StatusBadRequest)
 	}
 
@@ -338,11 +337,11 @@ func (h *Handler) Delete(ctx context.Context, in *gamedbpb.DeleteRequest, out *e
 		return err
 	}
 
-	user, err := utils.CtxMetadataUser(ctx)
+	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
-	if !auth.IntersectsRoles(user, auth.AllowServiceAndAdmin...) {
+	if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
 		var dg db.Game
 		err = bun.NewSelect().
 			Model(&dg).

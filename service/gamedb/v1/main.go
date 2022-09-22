@@ -1,101 +1,130 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
 	"go-micro.dev/v4/client"
+	"go-micro.dev/v4/logger"
+	"jochum.dev/jo-micro/auth2"
+	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/gamedb/v1/config"
 	gamedbHandler "wz2100.net/microlobby/service/gamedb/v1/handler/gamedb"
-	infoHandler "wz2100.net/microlobby/service/http_proxy/handler/info"
-	scomponent "wz2100.net/microlobby/service/settings/v1/component"
-	"wz2100.net/microlobby/shared/auth"
+	scomponent "wz2100.net/microlobby/service/settings/component"
 	"wz2100.net/microlobby/shared/component"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
-	"wz2100.net/microlobby/shared/proto/infoservicepb/v1"
-	"wz2100.net/microlobby/shared/utils"
 )
 
 func main() {
 	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), scomponent.NewSettingsV1())
 
+	auth2ClientReg := auth2.ClientAuthRegistry()
+
 	service := micro.NewService(
 		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
-		micro.Flags(registry.Flags()...),
+		micro.Flags(auth2ClientReg.MergeFlags(registry.Flags())...),
 	)
 	registry.SetService(service)
 
-	routes := []*infoservicepb.RoutesReply_Route{
-		{
-			Method:          http.MethodGet,
-			Path:            "/",
-			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.List),
-			IntersectsRoles: auth.AllowServiceAndUsers,
-			Params:          []string{"id", "history", "name", "limit", "offset"},
-		},
-		{
-			Method:          http.MethodPost,
-			Path:            "/",
-			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.Create),
-			IntersectsRoles: auth.AllowServiceAndUsers,
-		},
-		// {
-		// 	Method:          http.MethodGet,
-		// 	Path:            "/:id",
-		// 	Endpoint:        utils.ReflectFunctionName(settingsservicepb.SettingsV1Service.Get),
-		// 	IntersectsRoles: auth.AllowServiceAndUsers,
-		// 	Params:          []string{"id"},
-		// },
-		{
-			Method:          http.MethodPut,
-			Path:            "/:id",
-			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.Update),
-			IntersectsRoles: auth.AllowServiceAndUsers,
-			Params:          []string{"id"},
-		},
-		{
-			Method:          http.MethodDelete,
-			Path:            "/:id",
-			Endpoint:        utils.ReflectFunctionName(gamedbpb.GameDBV1Service.Delete),
-			IntersectsRoles: auth.AllowServiceAndUsers,
-			Params:          []string{"id"},
-		},
-	}
-
 	gdbH, err := gamedbHandler.NewHandler(registry)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
 	}
 
 	service.Init(
+		micro.WrapHandler(auth2ClientReg.Wrapper()),
 		micro.Action(func(c *cli.Context) error {
 			if err := registry.Init(c); err != nil {
 				return err
 			}
 
-			s := service.Server()
-			infoService := infoHandler.NewHandler(registry, config.ProxyURI, "v1", routes)
-			infoservicepb.RegisterInfoServiceHandler(s, infoService)
+			cLogrus, err := component.Logrus(registry)
+			if err != nil {
+				logger.Fatal(err)
+			}
+
+			if err := auth2ClientReg.Init(c, service); err != nil {
+				cLogrus.Logger().Fatal(err)
+			}
+
+			authVerifier := endpointroles.NewVerifier(
+				endpointroles.WithLogrus(cLogrus.Logger()),
+			)
+			authVerifier.AddRules(
+				endpointroles.RouterRule,
+				endpointroles.NewRule(
+					endpointroles.Endpoint(gamedbpb.GameDBV1Service.List),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(gamedbpb.GameDBV1Service.Create),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(gamedbpb.GameDBV1Service.Update),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+				endpointroles.NewRule(
+					endpointroles.Endpoint(gamedbpb.GameDBV1Service.Delete),
+					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+				),
+			)
+			auth2ClientReg.Plugin().SetVerifier(authVerifier)
+
+			// Register with https://jochum.dev/jo-micro/router
+			r := router.NewHandler(
+				config.RouterURI,
+				router.NewRoute(
+					router.Method(router.MethodGet),
+					router.Path("/"),
+					router.Endpoint(gamedbpb.GameDBV1Service.List),
+					router.Params("id", "history", "name", "limit", "offset"),
+					router.AuthRequired(),
+				),
+				router.NewRoute(
+					router.Method(router.MethodPost),
+					router.Path("/"),
+					router.Endpoint(gamedbpb.GameDBV1Service.Create),
+					router.AuthRequired(),
+				),
+				router.NewRoute(
+					router.Method(router.MethodPut),
+					router.Path("/:id"),
+					router.Endpoint(gamedbpb.GameDBV1Service.Update),
+					router.Params("id"),
+					router.AuthRequired(),
+				),
+				router.NewRoute(
+					router.Method(router.MethodDelete),
+					router.Path("/:id"),
+					router.Endpoint(gamedbpb.GameDBV1Service.Delete),
+					router.Params("id"),
+					router.AuthRequired(),
+				),
+			)
+			r.RegisterWithServer(service.Server())
 
 			if err := gdbH.Start(); err != nil {
-				log.Fatalln(err)
+				logger.Fatal(err)
 			}
-			gamedbpb.RegisterGameDBV1ServiceHandler(s, gdbH)
+			gamedbpb.RegisterGameDBV1ServiceHandler(service.Server(), gdbH)
 
 			return nil
 		}),
 	)
 
 	if err := service.Run(); err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
 	}
 
 	if err := gdbH.Stop(); err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
+	}
+
+	if err := auth2ClientReg.Stop(); err != nil {
+		logger.Fatal(err)
 	}
 }

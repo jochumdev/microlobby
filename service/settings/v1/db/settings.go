@@ -8,11 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"go-micro.dev/v4/util/log"
-	"wz2100.net/microlobby/shared/auth"
+	"jochum.dev/jo-micro/auth2"
 	"wz2100.net/microlobby/shared/component"
 	sdb "wz2100.net/microlobby/shared/db"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
-	"wz2100.net/microlobby/shared/utils"
 )
 
 type Setting struct {
@@ -30,13 +29,13 @@ type Setting struct {
 }
 
 func (s *Setting) UserHasReadPermission(ctx context.Context) bool {
-	user, err := utils.CtxMetadataUser(ctx)
+	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
 	if err != nil {
 		log.Error(err)
 		return false
 	}
 
-	if auth.HasRole(user, auth.ROLE_SUPERADMIN) {
+	if auth2.HasRole(user, auth2.ROLE_SUPERADMIN) {
 		return true
 	}
 
@@ -44,7 +43,7 @@ func (s *Setting) UserHasReadPermission(ctx context.Context) bool {
 		return true
 	}
 
-	if auth.IntersectsRoles(user, s.RolesRead...) {
+	if auth2.IntersectsRoles(user, s.RolesRead...) {
 		return true
 	}
 
@@ -52,12 +51,12 @@ func (s *Setting) UserHasReadPermission(ctx context.Context) bool {
 }
 
 func (s *Setting) UserHasUpdatePermission(ctx context.Context) bool {
-	user, err := utils.CtxMetadataUser(ctx)
+	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
 	if err != nil {
 		return false
 	}
 
-	if auth.HasRole(user, auth.ROLE_SUPERADMIN) {
+	if auth2.HasRole(user, auth2.ROLE_SUPERADMIN) {
 		return true
 	}
 
@@ -65,7 +64,7 @@ func (s *Setting) UserHasUpdatePermission(ctx context.Context) bool {
 		return true
 	}
 
-	if auth.IntersectsRoles(user, s.RolesUpdate...) {
+	if auth2.IntersectsRoles(user, s.RolesUpdate...) {
 		return true
 	}
 

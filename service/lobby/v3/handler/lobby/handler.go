@@ -7,12 +7,11 @@ import (
 	"net"
 
 	"go-micro.dev/v4/errors"
+	"jochum.dev/jo-micro/auth2"
 	"wz2100.net/microlobby/service/lobby/v3/config"
-	scomponent "wz2100.net/microlobby/service/settings/v1/component"
-	"wz2100.net/microlobby/shared/auth"
+	scomponent "wz2100.net/microlobby/service/settings/component"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
-	"wz2100.net/microlobby/shared/utils"
 )
 
 const pkgPath = config.PkgPath + "/handler/lobby"
@@ -46,7 +45,11 @@ func (h *Handler) Start() error {
 	}
 	h.logrus = logrus
 
-	ctx := component.RegistryToContext(utils.CtxForService(context.Background()), h.cRegistry)
+	sCtx, err := auth2.ClientAuthRegistry().Plugin().ServiceContext(context.Background())
+	if err != nil {
+		return errors.FromError(err)
+	}
+	ctx := component.RegistryToContext(sCtx, h.cRegistry)
 	s, err := scomponent.SettingsV1(h.cRegistry)
 	if err != nil {
 		return errors.FromError(err)
@@ -56,6 +59,9 @@ func (h *Handler) Start() error {
 	se, err := s.Get(ctx, "", "", h.svcName, "config")
 	if err == nil {
 		err = json.Unmarshal(se.Content, &c)
+		if err != nil {
+			return errors.FromError(err)
+		}
 	} else {
 		c.Host = "0.0.0.0"
 		c.Port = 9990
@@ -69,8 +75,8 @@ func (h *Handler) Start() error {
 			Service:     h.svcName,
 			Name:        "config",
 			Content:     craw,
-			RolesRead:   []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
-			RolesUpdate: []string{auth.ROLE_ADMIN, auth.ROLE_SERVICE},
+			RolesRead:   []string{auth2.ROLE_ADMIN, auth2.ROLE_SERVICE},
+			RolesUpdate: []string{auth2.ROLE_ADMIN, auth2.ROLE_SERVICE},
 		}); err != nil {
 			return errors.FromError(err)
 		}
