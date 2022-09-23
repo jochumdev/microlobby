@@ -32,34 +32,19 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 
 It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Registry and Broker is done over NATS, Transport over gRPC.
 
+For this project we have written 2 reuseable components:
+
+- [jo-micro/router](https://jochum.dev/jo-micro/router)
+- [jo-micro/auth2](https://jochum.dev/jo-micro/auth2)
+
 The draw.io flowchart for the Architecture:
 ![Micro Service Architecture](/docs/micro-service-architecture.png)
 
 ## Services
 
-### http_proxy
-
-A very simple Proxy to MicroServices. They have to register routes with it over the help of infoservice.
-Infoservice is just a ProtoBuf Service that needs to be registered into each microservice, see [auth/v1](https://github.com/pcdummy/microlobby/blob/master/service/auth/v1/main.go#L105).
-
-It provides 3 routes, the result will be collected from all microservices:
-
-| METHOD | Route             | AUTH | Description           |
-| ------ | ----------------- | ---- | --------------------- |
-| GET    | /health           |  n   | Summary health        |
-| GET    | /proxy/v1/health  |  y   | Detailed health       |
-| GET    | /proxy/v1/routes  |  y   | List of all routes    |
-
 ### settings/v1 Service
 
 Basic Key/Value Store with Permissions
-
-### auth/v1 Service
-
-- Give Username + password and you get a JWT back.
-- Internaly converts a JWT to a user with roles.
-- Does not need a Database it uses AES for the JWT to enforce it's coming from this instance.
-- [jwt.io](https://jwt.io) is very helpfull to see what's in a JWT.
 
 ### gamedb/v1 Service
 
