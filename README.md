@@ -30,7 +30,7 @@ MicroLobby is the next, next gen lobbyserver for Warzone 2100 after [wzlobbserve
 
 ## Basic Architecture
 
-It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. Registry and Broker is done over NATS, Transport over gRPC.
+It's written in Golang by using [go-micro.dev/v4](https://go-micro.dev) for simplicity. All communication happens over NATS.
 
 For this project we have written 2 reuseable components:
 
@@ -106,25 +106,25 @@ source ./token_refresh.sh
 - Check the proxy health api
 
 ```bash
-curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/proxy/v1/health | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/debug/v1/health | jq
 ```
 
 - Get a list of routes
 
 ```bash
-curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/router/routes | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/router/v1/routes | jq
 ```
 
 - Create a game
 
 ```bash
-curl -s -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/gamedb/v1/ | jq
+curl -s -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/gamedb/v1/ | jq
 ```
 
 - List games
 
 ```bash
-curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/gamedb/v1/ | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/gamedb/v1/ | jq
 ```
 
 ### Remove everything or start from new
