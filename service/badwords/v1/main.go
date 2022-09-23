@@ -48,7 +48,7 @@ func main() {
 				logger.Fatal(err)
 			}
 
-			if err := auth2ClientReg.Init(c, service); err != nil {
+			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
 				cLogrus.Logger().Fatal(err)
 			}
 
@@ -84,7 +84,7 @@ func main() {
 					router.Method(router.MethodGet),
 					router.Path("/check/:request"),
 					router.Endpoint(badwordspb.BadwordsV1Service.Check),
-					router.Params("limit", "offset"),
+					router.Params("request"),
 				),
 				router.NewRoute(
 					router.Method(router.MethodPost),

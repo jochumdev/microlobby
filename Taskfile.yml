@@ -141,19 +141,24 @@ tasks:
     deps:
       - check:toolchain
     cmds:
-      - podman-compose up -d --remove-orphans
+      - DOCKER_BUILDKIT=0 docker-compose up -d --remove-orphans
   
   ps:
     desc: Show running containers
     cmds:
-      - podman-compose ps
-      
+      - docker-compose ps
+
+  logs:
+    desc: Show docker logs
+    cmds:
+      - docker-compose logs -f {{.CLI_ARGS}}
+
   down:
     desc: Stopp all containers
     deps:
       - check:toolchain
     cmds:
-      - podman-compose down
+      - docker-compose down
 
   update:
     desc: Update all go dependencies
@@ -166,14 +171,14 @@ tasks:
     run: once
     cmds:
       - test -n "{{.CMD_PODMAN}}"
-      - test -n "{{.CMD_PCOMPOSE}}"
+      - test -n "{{.CMD_DCOMPOSE}}"
     vars:
-      CMD_PCOMPOSE:
-        sh: command -v podman-compose
+      CMD_DCOMPOSE:
+        sh: command -v docker-compose
 
   rm:
     desc: "Remove all persistent data"
     cmds:
-      - podman-compose down --volumes --rmi all
+      - docker-compose down --volumes --rmi all
       - podman volume rm microlobby_go || exit 0
       - rm -rf ./.task

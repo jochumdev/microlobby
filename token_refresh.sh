@@ -1,9 +1,6 @@
 #!/bin/bash
 function main() {
-    local HEALTH=$(curl -s -H "Content-Type: application/json" $MICROLOBBY/health | jq -r '.message')
-    echo "Health: $HEALTH"
-
-    local JSON=$(curl -s -X POST -H "Content-Type: application/json" -d '{"refreshToken": "'$REFRESH_TOKEN'"}' $MICROLOBBY/auth/v1/refresh)
+    local JSON=$(curl -s -X POST -H "Content-Type: application/json" -d '{"refreshToken": "'$REFRESH_TOKEN'"}' $MICROLOBBY/auth/refresh)
     echo "JSON: $JSON"
 
     export ACCESS_TOKEN=$(echo $JSON | jq -r '.accessToken')

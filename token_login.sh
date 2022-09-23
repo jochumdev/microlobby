@@ -1,10 +1,8 @@
 #!/bin/bash
 function main() {
     export MICROLOBBY=$1
-    local HEALTH=$(curl -s -H "Content-Type: application/json" ${MICROLOBBY}/health | jq -r '.message')
-    echo "${MICROLOBBY} Health: $HEALTH"
 
-    local JSON=$(curl -s -X POST -H "Content-Type: application/json" -d '{"username": "'$2'", "password": "'$3'"}' ${MICROLOBBY}/auth/v1/login)
+    local JSON=$(curl -s -X POST -H "Content-Type: application/json" -d '{"username": "'$2'", "password": "'$3'"}' ${MICROLOBBY}/auth/login)
     echo "JSON: $JSON"
 
     export ACCESS_TOKEN=$(echo $JSON | jq -r '.accessToken')

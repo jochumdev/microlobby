@@ -127,7 +127,7 @@ curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TO
 - Get a list of routes
 
 ```bash
-curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/proxy/v1/routes | jq
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/router/routes | jq
 ```
 
 - Create a game
