@@ -206,16 +206,6 @@ Creates a new game in the lobby (hosted by the current, authenticated user).
 
 - As is the case with the current lobby server, only direct connections to the server are supported. (i.e. No HTTP proxy support - this must be disabled in libcurl.)
 
-**SERVER NOTES:**
-
-- The server obtains the connecting (public) IP address, and checks whether it is IPv4 or IPv6. This information is returned to the client (as `host/availability`), which can then inform the server of another IP address on which it is available via the **[/api/gamedb/v1/&lt;UUID&gt;/add_ip](#apiv1lobbyltUUIDgtadd_ip)** endpoint.
-- The verifiable connecting IP address must be that of the host. Thus, we cannot support HTTP proxies (which can claim to be forwarding for an IP address, but can lie), but we *can* support environments like AppEngine that can verifiably provide the connecting IP.
-- The server can also geolocate the IP address to determine the host's country.
-  - One possible Python option: https://pythonhosted.org/python-geoip/
-  - There's also a whole webservice that uses the Geolite2 database available, but it's probably more than we need (https://github.com/maxmind/GeoIP2-python).
-- The server can also attempt a connection to the host, to verify that it's accessible, and return an error if not.
-  - Outbound sockets [work on AppEngine](https://cloud.google.com/appengine/docs/standard/python/sockets/), so can be used to connect to the host to verify.
-
 **ACL**: Any authenticated user with "host" privileges
 
 **input**:
@@ -228,10 +218,7 @@ On success:
 
 ```json
 {
-    "gameUUID" : "<UUID>",
-    "host"     : {
-        "availability"  : [ "ipv4" ]
-    }
+    "uuid" : "<UUID>",
 }
 ```
 
@@ -246,7 +233,7 @@ On failure:
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/ : GET
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/ : GET
 
 Get detailed information about a game in the Lobby.
 
@@ -301,7 +288,7 @@ Get detailed information about a game in the Lobby.
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/ : PUT
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/ : PUT
 
 Changes a game.
 
@@ -311,7 +298,7 @@ Changes a game.
 
 **returns**: NONE
 
-## /api/gamedb/v1/&lt;UUID&gt;/ : DELETE
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/ : DELETE
 
 Deletes the game from the Lobby (prior to it starting).
 
@@ -319,7 +306,7 @@ Deletes the game from the Lobby (prior to it starting).
 
 **returns**: boolean
 
-## /api/gamedb/v1/&lt;UUID&gt;/add_ip : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/ip : POST
 
 Called by the host to add a host IP address to their game.
 
@@ -327,7 +314,18 @@ The server obtains the connecting IP address, (potentially) verifies the host is
 
 **CLIENT NOTES**:
 
-- It is expected that the client uses appropriate logic to connect to the server via either IPv4 or IPv6 (as appropriate - i.e. the opposite of the initial `/api/gamedb/v1 : POST` connection that created the game.)
+- The client **MUST** try to initalize a connection with IPv4 and IPv6 at the same time, whatever succeds will be added.
+
+**SERVER NOTES:**
+
+- The server obtains the connecting (public) IP address, and checks whether it is IPv4 or IPv6. This information is returned to the client (as `host/availability`).
+- The verifiable connecting IP address must be that of the host. Thus, we cannot support HTTP proxies (which can claim to be forwarding for an IP address, but can lie), but we *can* support environments like AppEngine that can verifiably provide the connecting IP.
+- The server can also geolocate the IP address to determine the host's country.
+  - One possible Python option: https://pythonhosted.org/python-geoip/
+  - There's also a whole webservice that uses the Geolite2 database available, but it's probably more than we need (https://github.com/maxmind/GeoIP2-python).
+- The server can also attempt a connection to the host, to verify that it's accessible, and return an error if not.
+  - Outbound sockets [work on AppEngine](https://cloud.google.com/appengine/docs/standard/python/sockets/), so can be used to connect to the host to verify.
+- A game should be only listed when the client added an IP, not before that.
 
 **ACL**: The game's host (authenticated user) only
 
@@ -357,7 +355,7 @@ On failure:
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/request_join : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/request_join : POST
 
 Called by an authenticated user to "join" a game. This registers the intent on the server, and returns an object containing the information required for the client to connect to the game host.
 
@@ -408,7 +406,7 @@ X-UserRateLimit-Reset: <unix server timestamp>
 ```
 
 
-## /api/gamedb/v1/&lt;UUID&gt;/accept_join/ : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/accept_join/ : POST
 
 Authenticate the join request that the host received from a new player, using the `secret` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
@@ -447,13 +445,13 @@ HTTP Code: 200
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : PUT
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;name&gt; : PUT
 
 Update a player.
 
 **optional arguments**: `slot`, `team`
 
-## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : DELETE
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;name&gt; : DELETE
 
 Delete a player from the game, game owners can delete any player by given then `slot` argument, others can only delete themself.
 
