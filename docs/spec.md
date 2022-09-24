@@ -365,8 +365,13 @@ Called by an authenticated user to "join" a game. This registers the intent on t
 - The `secret` that is returned is a unique, unpredictable, short-lived, game-scoped identifier (==could be a UUID or a separate authenticated JWT==) that the client then sends to the host when connecting. (The host can then use this to identify the client to the lobby server. It cannot be used by any other user/host to identify a client.)
   - This helps prevent: (a) users from spoofing other users' identities when connecting to a host, (b) hosts from spoofing user joins.
 
+**CLIENT NOTES**:
+
+- The client needs to store the secret for other game related actions.
+
 **SERVER NOTES**:
 
+- Stores the secret in within the gamedb, for future actions.
 - Must implement rate-limiting by (at least):
   - Account
 
@@ -406,7 +411,7 @@ X-UserRateLimit-Reset: <unix server timestamp>
 ```
 
 
-## /api/gamedb/v1/&lt;GAME-UUID&gt;/accept/ : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/ : POST
 
 Authenticate the join request that the host received from a new player, using the `secret` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
@@ -423,6 +428,7 @@ HTTP Code: 200
 ```json
 {
     "player": {
+        "uuid": "<player-uuid-here>",
         "name": "Fastdeath",
         "rank": "not-sure-what-to-put-here",
         "stats": {
@@ -445,20 +451,55 @@ HTTP Code: 200
 }
 ```
 
-## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;name&gt; : PUT
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;PLAYER-UUID&gt; : PUT
 
 Update a player.
 
-**optional arguments**: `slot`, `team`
+**optional arguments**: `slot`, `team`, `name`
 
-## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;name&gt; : DELETE
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/player/&lt;PLAYER-UUID&gt; : DELETE
 
-Delete a player from the game, game owners can delete any player by given then `slot` argument, others can only delete themself.
+Delete (leave game during lobby) a player from the game, game owners can delete any player by given then `slot` argument.
 
 **ACL**: The game's host (authenticated user) can delete any player; players joined to the game can only delete themselves.
 
 **optional arguments**: `slot`
 
+
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/kicked/ : POST
+
+Let the lobbyserver know that the connecting player have been kicked during the Game.
+
+**CLIENT NOTES**:
+
+- The client **MUST** call this endpoint whenever a player got kicked from the game, this is important for Hoster stats.
+
+**SERVER NOTES**:
+
+- The Lobbyserver updates the host players profile and add +1 to players_kicked.
+
+**ACL**: Any authenticated user that is in that game.
+
+Request:
+
+```json
+{
+    "secret": "<secret-from-join>"
+}
+```
+
+On failure:
+
+```json
+{
+    "errors" : [
+        {
+            "id"         : "NOT_IN_THAT_GAME",
+            "message"    : "Your not in that game"
+        }
+    ]
+}
+```
 
 ## /api/profile/v1/ : GET
 
