@@ -58,9 +58,7 @@ We store roles in the JWT that makes it simpler to check rights on the server wi
 
 The client DOES NOT need to read the JWT, it only needs to forward it.
 
-## /api/auth/v1/register
-
-### POST
+## /api/auth/v1/register : POST
 
 Register a new username within the lobby.
 
@@ -101,7 +99,7 @@ HTTP Code: 401
     "errors"          : [
         {
             "id"         : "USER_EXISTS",
-            "string"     : {
+            "message"     : {
                 "en"     : "That user name exists, try a different user name",
                 "none"   : "other language translations"
 
@@ -112,9 +110,7 @@ HTTP Code: 401
 }
 ```
 
-## /api/auth/v1/login
-
-### POST
+## /api/auth/v1/login : POST
 
 Login to lobby with the given username and password-derived-key.
 
@@ -169,9 +165,7 @@ HTTP Code: 401
 }
 ```
 
-## /api/gamedb/v1/
-
-### /api/gamedb/v1/ : GET
+## /api/gamedb/v1/ : GET
 
 Lists the currently-active (joinable / not-yet-started) games in the Lobby.
 
@@ -214,7 +208,7 @@ Lists the currently-active (joinable / not-yet-started) games in the Lobby.
 }
 ```
 
-### /api/gamedb/v1/ : POST
+## /api/gamedb/v1/ : POST
 
 Creates a new game in the lobby (hosted by the current, authenticated user).
 
@@ -266,10 +260,7 @@ On failure:
 }
 ```
 
-
-## /api/gamedb/v1/&lt;UUID&gt;/
-
-### /api/gamedb/v1/&lt;UUID&gt;/ : GET
+## /api/gamedb/v1/&lt;UUID&gt;/ : GET
 
 Get detailed information about a game in the Lobby.
 
@@ -324,7 +315,7 @@ Get detailed information about a game in the Lobby.
 }
 ```
 
-### /api/gamedb/v1/&lt;UUID&gt;/ : PUT
+## /api/gamedb/v1/&lt;UUID&gt;/ : PUT
 
 Changes a game.
 
@@ -334,7 +325,7 @@ Changes a game.
 
 **returns**: NONE
 
-### /api/gamedb/v1/&lt;UUID&gt;/ : DELETE
+## /api/gamedb/v1/&lt;UUID&gt;/ : DELETE
 
 Deletes the game from the Lobby (prior to it starting).
 
@@ -342,9 +333,7 @@ Deletes the game from the Lobby (prior to it starting).
 
 **returns**: boolean
 
-## /api/gamedb/v1/&lt;UUID&gt;/add_ip
-
-### /api/gamedb/v1/&lt;UUID&gt;/add_ip : POST
+## /api/gamedb/v1/&lt;UUID&gt;/add_ip : POST
 
 Called by the host to add a host IP address to their game.
 
@@ -386,9 +375,7 @@ On failure:
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/client_request_join
-
-### /api/gamedb/v1/&lt;UUID&gt;/client_request_join : POST
+## /api/gamedb/v1/&lt;UUID&gt;/client_request_join : POST
 
 Called by an authenticated user to "join" a game. This registers the intent on the server, and returns an object containing the information required for the client to connect to the game host.
 
@@ -435,9 +422,7 @@ On failure:
 ```
 
 
-## /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/
-
-### /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/ : POST
+## /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/ : POST
 
 Authenticate the join request that the host received from a new player, using the `client_join_request_id` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
@@ -479,15 +464,13 @@ HTTP Code: 200
 ```
 
 
-## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt;
-
-### /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : PUT
+## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : PUT
 
 Update a player.
 
 **optional arguments**: `slot`, `team`
 
-### /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : DELETE
+## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : DELETE
 
 Delete a player from the game, game owners can delete any player by given then `slot` argument, others can only delete themself.
 
@@ -496,9 +479,7 @@ Delete a player from the game, game owners can delete any player by given then `
 **optional arguments**: `slot`
 
 
-## /api/v1/account
-
-### GET
+## /api/v1/account : GET
 
 Get detailed information about the current authenticated user's account
 
@@ -549,9 +530,7 @@ Get detailed information about the current authenticated user's account
 }
 ```
 
-## /api/v1/account/change_password
-
-### PUT
+## /api/v1/account/change_password : PUT
 
 Change the current account's password
 
