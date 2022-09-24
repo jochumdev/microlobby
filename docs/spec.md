@@ -1,6 +1,6 @@
-# WzRESTLobby API V1 Documentation
+# Microlobby API V1 Documentation
 
-This document describes the V1 API of WzRESTLobby
+This document describes the V1 API of microlobby.
 
 ## General Notes
 
@@ -55,6 +55,8 @@ JWT payload:
 ```
 
 We store roles in the JWT that makes it simpler to check rights on the server without an extra call to Inspect the token each time.
+
+The client DOES NOT need to read the JWT, it only needs to forward it.
 
 ## /api/auth/v1/register
 
@@ -169,7 +171,7 @@ HTTP Code: 401
 
 ## /api/gamedb/v1/
 
-### GET
+### /api/gamedb/v1/ : GET
 
 Lists the currently-active (joinable / not-yet-started) games in the Lobby.
 
@@ -212,7 +214,7 @@ Lists the currently-active (joinable / not-yet-started) games in the Lobby.
 }
 ```
 
-### POST
+### /api/gamedb/v1/ : POST
 
 Creates a new game in the lobby (hosted by the current, authenticated user).
 
@@ -265,9 +267,9 @@ On failure:
 ```
 
 
-## /api/v1/lobby/&lt;UUID&gt;/
+## /api/gamedb/v1/&lt;UUID&gt;/
 
-### GET
+### /api/gamedb/v1/&lt;UUID&gt;/ : GET
 
 Get detailed information about a game in the Lobby.
 
@@ -322,7 +324,7 @@ Get detailed information about a game in the Lobby.
 }
 ```
 
-### PUT
+### /api/gamedb/v1/&lt;UUID&gt;/ : PUT
 
 Changes a game.
 
@@ -332,7 +334,7 @@ Changes a game.
 
 **returns**: NONE
 
-### DELETE
+### /api/gamedb/v1/&lt;UUID&gt;/ : DELETE
 
 Deletes the game from the Lobby (prior to it starting).
 
@@ -340,9 +342,9 @@ Deletes the game from the Lobby (prior to it starting).
 
 **returns**: boolean
 
-## /api/v1/lobby/&lt;UUID&gt;/add_ip
+## /api/gamedb/v1/&lt;UUID&gt;/add_ip
 
-### POST
+### /api/gamedb/v1/&lt;UUID&gt;/add_ip : POST
 
 Called by the host to add a host IP address to their game.
 
@@ -384,9 +386,9 @@ On failure:
 }
 ```
 
-## /api/v1/lobby/&lt;UUID&gt;/client_request_join
+## /api/gamedb/v1/&lt;UUID&gt;/client_request_join
 
-### POST
+### /api/gamedb/v1/&lt;UUID&gt;/client_request_join : POST
 
 Called by an authenticated user to "join" a game. This registers the intent on the server, and returns an object containing the information required for the client to connect to the game host.
 
@@ -433,9 +435,9 @@ On failure:
 ```
 
 
-## /api/v1/lobby/&lt;UUID&gt;/host_accept_join/
+## /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/
 
-### POST
+### /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/ : POST
 
 Authenticate the join request that the host received from a new player, using the `client_join_request_id` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
@@ -477,15 +479,15 @@ HTTP Code: 200
 ```
 
 
-## /api/v1/lobby/&lt;UUID&gt;/player/&lt;name&gt;
+## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt;
 
-### PUT
+### /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : PUT
 
 Update a player.
 
 **optional arguments**: `slot`, `team`
 
-### DELETE
+### /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : DELETE
 
 Delete a player from the game, game owners can delete any player by given then `slot` argument, others can only delete themself.
 
