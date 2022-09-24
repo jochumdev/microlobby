@@ -355,7 +355,7 @@ On failure:
 }
 ```
 
-## /api/gamedb/v1/&lt;GAME-UUID&gt;/request_join : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/join/ : POST
 
 Called by an authenticated user to "join" a game. This registers the intent on the server, and returns an object containing the information required for the client to connect to the game host.
 
@@ -406,7 +406,7 @@ X-UserRateLimit-Reset: <unix server timestamp>
 ```
 
 
-## /api/gamedb/v1/&lt;GAME-UUID&gt;/accept_join/ : POST
+## /api/gamedb/v1/&lt;GAME-UUID&gt;/accept/ : POST
 
 Authenticate the join request that the host received from a new player, using the `secret` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
