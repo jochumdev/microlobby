@@ -151,7 +151,7 @@ services:
 
   dashboard:
     restart: ${DOCKER_RESTART}
-    image: ${DOCKER_IO}/xpunch/go-micro-dashboard:latest
+    image: ${DOCKER_ORG_GOMICRODEV}/dashboard:latest
     environment:
       - MICRO_TRANSPORT=${MICRO_TRANSPORT}
       - MICRO_TRANSPORT_ADDRESS=${MICRO_TRANSPORT_ADDRESS}
