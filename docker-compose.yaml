@@ -2,7 +2,7 @@ version: '3'
 services:
   nats:
     restart: ${DOCKER_RESTART}
-    image: ${DOCKER_IO}/library/nats:2.8.4-alpine
+    image: ${DOCKER_IO}/library/nats:${NATS_TAG}
     command: -js -sd /data
     volumes:
       - nats:/data
@@ -10,6 +10,12 @@ services:
       - "4222:4222"
       - "6222:6222"
       - "8222:8222"
+
+  redis:
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_IO}/library/redis:${REDIS_TAG}
+    volumes:
+      - redis:/data
 
   postgresd:
     restart: ${DOCKER_RESTART}
@@ -25,7 +31,7 @@ services:
 
   pgadmin:
     restart: ${DOCKER_RESTART}
-    image: ${DOCKER_IO}/dpage/pgadmin4:6
+    image: ${DOCKER_IO}/dpage/pgadmin4:${PGADMIN_TAG}
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
@@ -180,12 +186,15 @@ services:
       - MICRO_ROUTER_LISTEN=:8080
       - MICRO_ROUTER_DEBUGMODE=${MICRO_ROUTER_DEBUGMODE}
       - MICRO_ROUTER_LOG_LEVEL=${LOG_LEVEL}
+      - MICRO_ROUTER_RATELIMITER_STORE_URL=${MICRO_ROUTER_RATELIMITER_STORE_URL}
     ports:
       - 8080:8080
     depends_on:
       - nats
+      - redis
 
 volumes:
   nats: {}
+  redis: {}
   postgresd: {}
   pgadmin: {}
