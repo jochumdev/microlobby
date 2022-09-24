@@ -99,12 +99,7 @@ HTTP Code: 401
     "errors"          : [
         {
             "id"         : "USER_EXISTS",
-            "message"     : {
-                "en"     : "That user name exists, try a different user name",
-                "none"   : "other language translations"
-
-            },
-            "helpurl"    : "https://lobby.wz2100.net/error/USER_EXISTS"
+            "message"     : "That user name exists, try a different user name"
         }
     ]
 }
@@ -154,12 +149,7 @@ HTTP Code: 401
     "errors"          : [
         {
             "id"         : "INVALID_USERNAME_OR_PASSWORD",
-            "string"     : {
-                "en"     : "Invalid username and/or password.",
-                "none"   : "other language translations"
-
-            },
-            "helpurl"    : "http://wz2100.net/example"
+            "message"    : "Invalid username and/or password."
         }
     ]
 }
@@ -251,11 +241,7 @@ On failure:
 {
     "error"          : {
         "id"         : "FAILED_VERIFY_HOST_CONNECTION",
-        "string"     : {
-            "en"     : "Unable to connect to host. A firewall may be blocking access"
-            "none"   : "Other language translations"
-        },
-        "helpurl"    : "http://wz2100.net/example"
+        "message"    : "Unable to connect to host. A firewall may be blocking access"
     }
 }
 ```
@@ -365,11 +351,7 @@ On failure:
     "errors"  : [
         {
             "id"         : "FAILED_VERIFY_HOST_CONNECTION",
-            "string"     : {
-                "en"     : "Unable to connect to host. A firewall may be blocking access"
-                "none"   : "Other language translations"
-            },
-            "helpurl"    : "http://wz2100.net/example"
+            "message"    : "Unable to connect to host. A firewall may be blocking access"
         }
     ]
 }
@@ -406,16 +388,20 @@ Called by an authenticated user to "join" a game. This registers the intent on t
 
 On failure:
 
+Headers:
+
+```text
+X-UserRateLimit-Limit: 5
+X-UserRateLimit-Remaining: 0
+X-UserRateLimit-Reset: <unix server timestamp>
+```
+
 ```json
 {
     "errors" : [
         {
-            "id"         : "FAILED_RATED_LIMITED",
-            "string"     : {
-                "en"     : "You joined too many games - please wait for %s minutes.",
-                "none"   : "Other language translations here"
-            },
-            "helpurl"    : "http://wz2100.net/example"
+            "id"         : "TO_MANY_REQUESTS",
+            "message"    : "To many requests"
         }
     ]
 }
@@ -520,11 +506,7 @@ Get detailed information about the current authenticated user's account
     "server_messages": [
         {
             "id"         : "ACCOUNT_TEMP_BAN_DETAILS",
-            "string"     : {
-                "en"     : "Your account has been temporarily banned due to: inappropriate language.\nYou will not be able to join or host games until the ban expires.",
-                "none"   : "other language translations"
-            },
-            "helpurl"    : "http://wz2100.net/example"
+            "message"    : "Your account has been temporarily banned due to: inappropriate language.\nYou will not be able to join or host games until the ban expires."
         }
     ]
 }
@@ -574,12 +556,7 @@ HTTP Code: 401
     "errors"          : [
         {
             "id"         : "INVALID_PASSWORD",
-            "string"     : {
-                "en"     : "The existing password does not match.",
-                "none"   : "other language translations"
-
-            },
-            "helpurl"    : "http://wz2100.net/example"
+            "message"    : "The existing password does not match."
         }
     ]
 }
