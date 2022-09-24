@@ -357,14 +357,14 @@ On failure:
 }
 ```
 
-## /api/gamedb/v1/&lt;UUID&gt;/client_request_join : POST
+## /api/gamedb/v1/&lt;UUID&gt;/request_join : POST
 
 Called by an authenticated user to "join" a game. This registers the intent on the server, and returns an object containing the information required for the client to connect to the game host.
 
 **NOTES**:
 
 - This is the only way to obtain the game host's IP address(es). They must not be available via any other method.
-- The `client_join_request_id` that is returned is a unique, unpredictable, short-lived, game-scoped identifier (==could be a UUID or a separate authenticated JWT==) that the client then sends to the host when connecting. (The host can then use this to identify the client to the lobby server. It cannot be used by any other user/host to identify a client.)
+- The `secret` that is returned is a unique, unpredictable, short-lived, game-scoped identifier (==could be a UUID or a separate authenticated JWT==) that the client then sends to the host when connecting. (The host can then use this to identify the client to the lobby server. It cannot be used by any other user/host to identify a client.)
   - This helps prevent: (a) users from spoofing other users' identities when connecting to a host, (b) hosts from spoofing user joins.
 
 **SERVER NOTES**:
@@ -382,7 +382,7 @@ Called by an authenticated user to "join" a game. This registers the intent on t
         ["127.0.0.1", 2100]
         ["0:0:0:0:0:0:0:1", 2100],
     ],
-    "client_join_request_id": "<CLIENT_CONNECT_ID_TOKEN>"
+    "secret": "<CLIENT_CONNECT_ID_TOKEN>"
 }
 ```
 
@@ -408,13 +408,13 @@ X-UserRateLimit-Reset: <unix server timestamp>
 ```
 
 
-## /api/gamedb/v1/&lt;UUID&gt;/host_accept_join/ : POST
+## /api/gamedb/v1/&lt;UUID&gt;/accept_join/ : POST
 
-Authenticate the join request that the host received from a new player, using the `client_join_request_id` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
+Authenticate the join request that the host received from a new player, using the `secret` that the client transmitted to the host. If the join request is valid for this game, the associated player is added to the game &amp; the player details are returned to the host.
 
 **ACL**: The game's host (authenticated user) only
 
-**arguments**: `client_join_request_id`, `slot`, `team`
+**arguments**: `secret`, `slot`, `team`
 
 **returns**: a JSON object, containing (on success) the validated player details
 
@@ -446,7 +446,6 @@ HTTP Code: 200
     }
 }
 ```
-
 
 ## /api/gamedb/v1/&lt;UUID&gt;/player/&lt;name&gt; : PUT
 
