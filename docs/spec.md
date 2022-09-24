@@ -40,37 +40,32 @@ JWT payload:
 ```json
 {
   "iss": "go.micro.auth",
-  "sub": "admin",
+  "sub": "[KING]Fast",
   "aud": [
     "https://lobby.wz2100.net"
   ],
   "exp": 1663905852,
   "nbf": 1663902252,
   "iat": 1663902252,
-  "jti": "2e4d8ed5-934d-4cd2-84fb-bd650d3a1ded",
+  "jti": "xxxxxxxx-934d-4cd2-84fb-bd650d3a1ded",
   "roles": [
-    "user",
-    "admin",
-    "superadmin"
+    "user"
   ]
 }
 ```
 
-While we *could* store permissions in the JWT, we'd have to invalidate existing tokens if permissions were changed for a user (forcing the user to log back in)... which requires some form of database query. Since we need database access *anyway*, we can just query the user's permissions from the database.
+We store roles in the JWT that makes it simpler to check rights on the server without an extra call to Inspect the token each time.
 
-## /api/v1/register
+## /api/auth/v1/register
 
 ### POST
 
 Register a new username within the lobby.
 
-**CLIENT NOTES**:
-
-- **Before** sending to the server, the user's password is run through the key derivation function **Argon2id** (with parameters to be specified here after testing performance on various systems). That key is then effectively the user's password.
-
 **SERVER NOTES**:
 
 - The server must then **additionally** use appropriate measures, such as a password-hashing-function like bcrypt / scrypt (or whatever ends up supported on the environments we're looking into) to store the password / password-derived-key that the client sends.
+  - We have choosen argon2-id here, if it's to slow/takes to much compute power we switch to bcrypt.
 - Must implement rate-limiting by (at least):
   - Account
   - IP address
@@ -79,7 +74,7 @@ Register a new username within the lobby.
 
 **RATE Limit** 10 per day/1 per minute
 
-**returns**: a JSON object, containing (on success) an `access_token` JWT used for authenticating future requests
+**returns**: a JSON object, containing (on success) an `accessToken` JWT used for authenticating future requests
 
 On success:
 
@@ -87,11 +82,11 @@ HTTP Code: 200
 
 ```json
 {
-    "success"        : true,
-    "data": {
-        "access_token"          : "<b64-encoded-JWT-token>",
-        "expires"               : "2018-12-01"
-    }
+  "id"                                : "<users-uuid-here>",
+  "accessToken"                       : "<b64-encoded-JWT-token>",
+  "accessTokenExpiresAt"              : "<unix-timestamp>",
+  "refreshToken"                      : "<b64-encoded-JWT-token>",
+  "refreshTokenExpiresAt"             : "<unix-timestamp>"
 }
 ```
 
@@ -101,7 +96,6 @@ HTTP Code: 401
 
 ```json
 {
-    "success"        : false,
     "errors"          : [
         {
             "id"         : "USER_EXISTS",
@@ -116,7 +110,7 @@ HTTP Code: 401
 }
 ```
 
-## /api/v1/login
+## /api/auth/v1/login
 
 ### POST
 
@@ -145,11 +139,11 @@ HTTP Code: 200
 
 ```json
 {
-    "success"        : true,
-    "data": {
-        "access_token"          : "<b64-encoded-JWT-token>",
-        "expires"               : "2018-12-01"
-    }
+  "id"                                : "<users-uuid-here>",
+  "accessToken"                       : "<b64-encoded-JWT-token>",
+  "accessTokenExpiresAt"              : "<unix-timestamp>",
+  "refreshToken"                      : "<b64-encoded-JWT-token>",
+  "refreshTokenExpiresAt"             : "<unix-timestamp>"
 }
 ```
 
@@ -159,7 +153,6 @@ HTTP Code: 401
 
 ```json
 {
-    "success"        : false,
     "errors"          : [
         {
             "id"         : "INVALID_USERNAME_OR_PASSWORD",
@@ -174,17 +167,7 @@ HTTP Code: 401
 }
 ```
 
-## /api/v1/logout
-
-### POST
-
-Removes the JWT from the valid token's table.
-
-
-**ACL**: Any authenticated user (with a valid JWT)
-
-
-## /api/v1/lobby
+## /api/gamedb/v1/
 
 ### GET
 
@@ -259,12 +242,9 @@ On success:
 
 ```json
 {
-    "success" : true,
-    "data"    : {
-        "gameUUID" : "<UUID>",
-        "host"     : {
-            "availability"  : [ "ipv4" ]
-        }
+    "gameUUID" : "<UUID>",
+    "host"     : {
+        "availability"  : [ "ipv4" ]
     }
 }
 ```
@@ -273,7 +253,6 @@ On failure:
 
 ```json
 {
-    "success"        : false,
     "error"          : {
         "id"         : "FAILED_VERIFY_HOST_CONNECTION",
         "string"     : {
@@ -298,51 +277,48 @@ Get detailed information about a game in the Lobby.
 
 ```json
 {
-    "success"        : true,
-    "data": {
-        "host"           : {
-            "availability"  : [ "ipv4", "ipv6" ],
-            "country"       : "UK",
-            "player"        : {
-                "name" : "Fastdeath",
-                "rank": "not-sure-what-to-put-here"
-                // ...
-            },
-        },
-        "description"    : "Test 1",
-        "currentPlayers" : 1,
-        "maxPlayers"     : 3,
-        "multiVer"       : "Warzone 2100 master",
-        "wzVerMajor"     : 0x1000,
-        "wzVerMinor"     : 0,
-        "isPrivate"      : false,
-        "modlist"        : "",
-        "mapname"        : "Sk-Rush-T1",
-        "limits"         : 0x0,
-        "players":  [
-            {
-                "name": "Fastdeath",
-                "rank": "not-sure-what-to-put-here",
-                "team": "a",
-                "isAI": false,
-                "available": false
-            },
-            {
-                "name": "NullBot",
-                "team": "b",
-                "isAI": true,
-                "available": false
-            },
-            {
-                "name": "pastdue",
-                "rank": "not-sure-what-to-put-here",
-                "team": "c",
-                "isAI": false,
-                "available": false
-            }
+    "host"           : {
+        "availability"  : [ "ipv4", "ipv6" ],
+        "country"       : "UK",
+        "player"        : {
+            "name" : "Fastdeath",
+            "rank": "not-sure-what-to-put-here"
             // ...
-        ]
-    }
+        },
+    },
+    "description"    : "Test 1",
+    "currentPlayers" : 1,
+    "maxPlayers"     : 3,
+    "multiVer"       : "Warzone 2100 master",
+    "wzVerMajor"     : 0x1000,
+    "wzVerMinor"     : 0,
+    "isPrivate"      : false,
+    "modlist"        : "",
+    "mapname"        : "Sk-Rush-T1",
+    "limits"         : 0x0,
+    "players":  [
+        {
+            "name": "Fastdeath",
+            "rank": "not-sure-what-to-put-here",
+            "team": "a",
+            "isAI": false,
+            "available": false
+        },
+        {
+            "name": "NullBot",
+            "team": "b",
+            "isAI": true,
+            "available": false
+        },
+        {
+            "name": "pastdue",
+            "rank": "not-sure-what-to-put-here",
+            "team": "c",
+            "isAI": false,
+            "available": false
+        }
+        // ...
+    ]
 }
 ```
 
@@ -384,12 +360,9 @@ On success:
 
 ```json
 {
-    "success" : true,
-    "data"    : {
-        "host" : {
-            "availability"  : [ "ipv4", "ipv6" ],
-            "newavailability" : [ "ipv6" ]
-        }
+    "host" : {
+        "availability"  : [ "ipv4", "ipv6" ],
+        "newavailability" : [ "ipv6" ]
     }
 }
 ```
@@ -398,7 +371,6 @@ On failure:
 
 ```json
 {
-    "success" : false,
     "errors"  : [
         {
             "id"         : "FAILED_VERIFY_HOST_CONNECTION",
@@ -435,14 +407,11 @@ Called by an authenticated user to "join" a game. This registers the intent on t
 
 ```json
 {
-    "success": true,
-    "data": {
-        "ips": [
-            ["127.0.0.1", 2100]
-            ["0:0:0:0:0:0:0:1", 2100],
-        ],
-        "client_join_request_id": "<CLIENT_CONNECT_ID_TOKEN>"
-    }
+    "ips": [
+        ["127.0.0.1", 2100]
+        ["0:0:0:0:0:0:0:1", 2100],
+    ],
+    "client_join_request_id": "<CLIENT_CONNECT_ID_TOKEN>"
 }
 ```
 
@@ -450,7 +419,6 @@ On failure:
 
 ```json
 {
-    "success": false,
     "errors" : [
         {
             "id"         : "FAILED_RATED_LIMITED",
@@ -483,28 +451,25 @@ HTTP Code: 200
 
 ```json
 {
-    "success": true,
-    "data": {
-        "player": {
-            "name": "Fastdeath",
-            "rank": "not-sure-what-to-put-here",
-            "stats": {
-                "lifetime": {
-                    "games": 101,
-                    "hosted": 12,
-                    "commends": 42,
-                    "reports": 1,
-                    "abandons": 2,
-                    "players_kicked": 7
-                },
-                "recent": {
-                    "games": 20,
-                    "hosted": 2,
-                    "commends": 1,
-                    "reports": 0,
-                    "abandons": 2,
-                    "players_kicked": 0
-                }
+    "player": {
+        "name": "Fastdeath",
+        "rank": "not-sure-what-to-put-here",
+        "stats": {
+            "lifetime": {
+                "games": 101,
+                "hosted": 12,
+                "commends": 42,
+                "reports": 1,
+                "abandons": 2,
+                "players_kicked": 7
+            },
+            "recent": {
+                "games": 20,
+                "hosted": 2,
+                "commends": 1,
+                "reports": 0,
+                "abandons": 2,
+                "players_kicked": 0
             }
         }
     }
@@ -546,42 +511,39 @@ Get detailed information about the current authenticated user's account
 
 ```json
 {
-    "success": true,
-    "data": {
-        "name" : "Fastdeath",
-        "rank": "not-sure-what-to-put-here",
-        "stats": {
-            "lifetime": {
-                "games": 101,
-                "hosted": 12,
-                "commends": 42,
-                "reports": 1,
-                "abandons": 2,
-                "players_kicked": 7
-            },
-            "recent": {
-                "games": 20,
-                "hosted": 2,
-                "commends": 1,
-                "reports": 0,
-                "abandons": 2,
-                "players_kicked": 0
-            }
+    "name" : "Fastdeath",
+    "rank": "not-sure-what-to-put-here",
+    "stats": {
+        "lifetime": {
+            "games": 101,
+            "hosted": 12,
+            "commends": 42,
+            "reports": 1,
+            "abandons": 2,
+            "players_kicked": 7
         },
-        "currently_hosting_games": [
-            "<game UUID>"
-        ],
-        "server_messages": [
-            {
-                "id"         : "ACCOUNT_TEMP_BAN_DETAILS",
-                "string"     : {
-                    "en"     : "Your account has been temporarily banned due to: inappropriate language.\nYou will not be able to join or host games until the ban expires.",
-                    "none"   : "other language translations"
-                },
-                "helpurl"    : "http://wz2100.net/example"
-            }
-        ]
-    }
+        "recent": {
+            "games": 20,
+            "hosted": 2,
+            "commends": 1,
+            "reports": 0,
+            "abandons": 2,
+            "players_kicked": 0
+        }
+    },
+    "currently_hosting_games": [
+        "<game UUID>"
+    ],
+    "server_messages": [
+        {
+            "id"         : "ACCOUNT_TEMP_BAN_DETAILS",
+            "string"     : {
+                "en"     : "Your account has been temporarily banned due to: inappropriate language.\nYou will not be able to join or host games until the ban expires.",
+                "none"   : "other language translations"
+            },
+            "helpurl"    : "http://wz2100.net/example"
+        }
+    ]
 }
 ```
 
@@ -614,11 +576,11 @@ HTTP Code: 200
 
 ```json
 {
-    "success"        : true,
-    "data": {
-        "access_token"          : "<b64-encoded-JWT-token>",
-        "expires"               : "2018-12-01"
-    }
+  "id"                                : "<users-uuid-here>",
+  "accessToken"                       : "<b64-encoded-JWT-token>",
+  "accessTokenExpiresAt"              : "<unix-timestamp>",
+  "refreshToken"                      : "<b64-encoded-JWT-token>",
+  "refreshTokenExpiresAt"             : "<unix-timestamp>"
 }
 ```
 
@@ -628,7 +590,6 @@ HTTP Code: 401
 
 ```json
 {
-    "success"        : false,
     "errors"          : [
         {
             "id"         : "INVALID_PASSWORD",
@@ -642,4 +603,3 @@ HTTP Code: 401
     ]
 }
 ```
-
