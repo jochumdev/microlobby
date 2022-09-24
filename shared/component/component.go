@@ -23,7 +23,7 @@ type Component interface {
 	Key() interface{}
 	Priority() int8
 	Name() string
-	Flags() []cli.Flag
+	MergeFlags([]cli.Flag) []cli.Flag
 	Initialized() bool
 	Init(registry *Registry, context *cli.Context) error
 	Health(context context.Context) (string, bool)
@@ -114,10 +114,9 @@ func (r *Registry) Get(key interface{}) (Component, error) {
 	return nil, errors.New("not found")
 }
 
-func (r *Registry) Flags() []cli.Flag {
-	flags := []cli.Flag{}
+func (r *Registry) MergeFlags(flags []cli.Flag) []cli.Flag {
 	for _, c := range r.components {
-		flags = append(flags, c.Flags()...)
+		flags = c.MergeFlags(flags)
 	}
 
 	return flags

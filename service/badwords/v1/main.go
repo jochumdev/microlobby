@@ -27,8 +27,8 @@ func main() {
 		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.Flags())...),
-		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry), auth2ClientReg.Wrapper()),
+		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
+		micro.WrapHandler(auth2ClientReg.Wrapper()),
 	)
 	registry.SetService(service)
 
@@ -48,7 +48,11 @@ func main() {
 				logger.Fatal(err)
 			}
 
-			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
+			if err := auth2ClientReg.Init(
+				auth2.CliContext(c),
+				auth2.Service(service),
+				auth2.Logrus(cLogrus.Logger()),
+			); err != nil {
 				cLogrus.Logger().Fatal(err)
 			}
 
@@ -77,7 +81,6 @@ func main() {
 			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
 			s := service.Server()
-			// ab
 			r := router.NewHandler(
 				config.RouterURI,
 				router.NewRoute(

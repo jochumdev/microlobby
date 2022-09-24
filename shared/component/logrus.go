@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"wz2100.net/microlobby/shared/utils"
 )
 
 type LogrusKey struct{}
@@ -41,15 +42,16 @@ func (c *LogrusStdOut) Name() string {
 	return "shared.log"
 }
 
-func (c *LogrusStdOut) Flags() []cli.Flag {
-	return []cli.Flag{
+func (c *LogrusStdOut) MergeFlags(flags []cli.Flag) []cli.Flag {
+	return utils.MergeFlags(
+		flags,
 		&cli.StringFlag{
 			Name:    "loglevel",
 			Value:   "info",
 			Usage:   "Logrus log level default 'info', {panic,fatal,error,warn,info,debug,trace} available",
 			EnvVars: []string{"LOG_LEVEL"},
 		},
-	}
+	)
 }
 
 func (c *LogrusStdOut) Initialized() bool {

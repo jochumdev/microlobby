@@ -5,12 +5,9 @@ import (
 
 	goaway "github.com/TwiN/go-away"
 
-	"wz2100.net/microlobby/service/badwords/v1/config"
 	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
-
-const pkgPath = config.PkgPath + "/handler/badwords"
 
 type Handler struct {
 	cRegistry *component.Registry

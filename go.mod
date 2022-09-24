@@ -6,6 +6,7 @@ require (
 	github.com/TwiN/go-away v1.6.8
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/go-micro/plugins/v4/transport/grpc v1.1.0
+	github.com/go-micro/plugins/v4/transport/nats v1.1.1-0.20220908125827-e0369dde429b
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/sirupsen/logrus v1.9.0
@@ -14,8 +15,8 @@ require (
 	github.com/urfave/cli/v2 v2.16.3
 	go-micro.dev/v4 v4.8.1
 	google.golang.org/protobuf v1.28.1
-	jochum.dev/jo-micro/auth2 v0.3.0
-	jochum.dev/jo-micro/router v0.3.4
+	jochum.dev/jo-micro/auth2 v0.3.5
+	jochum.dev/jo-micro/router v0.3.9
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-git/go-git/v5 v5.4.2 // indirect
-	github.com/go-micro/plugins/v4/transport/nats v1.1.1-0.20220908125827-e0369dde429b // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
@@ -65,7 +65,7 @@ require (
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.12 // indirect
-	google.golang.org/genproto v0.0.0-20220921223823-23cae91e6737 // indirect
+	google.golang.org/genproto v0.0.0-20220923205249-dd2d53f1fffc // indirect
 	google.golang.org/grpc v1.49.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

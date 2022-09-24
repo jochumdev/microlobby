@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/log/logrusadapter"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/urfave/cli/v2"
+	"wz2100.net/microlobby/shared/utils"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -75,8 +76,9 @@ func (c *CBUN) Name() string {
 	return "shared.bun"
 }
 
-func (c *CBUN) Flags() []cli.Flag {
-	return []cli.Flag{
+func (c *CBUN) MergeFlags(flags []cli.Flag) []cli.Flag {
+	return utils.MergeFlags(
+		flags,
 		&cli.StringFlag{
 			Name:    "database-url",
 			Usage:   "bun Database URL",
@@ -101,7 +103,7 @@ func (c *CBUN) Flags() []cli.Flag {
 			Usage:   "Folder which contains migrations",
 			EnvVars: []string{"MIGRATIONS_DIR"},
 		},
-	}
+	)
 }
 
 func (c *CBUN) Initialized() bool {

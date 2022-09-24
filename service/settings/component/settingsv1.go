@@ -92,14 +92,15 @@ func (c *SettingsV1Handler) Name() string {
 	return "shared.settingsv1"
 }
 
-func (c *SettingsV1Handler) Flags() []cli.Flag {
-	return []cli.Flag{
+func (c *SettingsV1Handler) MergeFlags(flags []cli.Flag) []cli.Flag {
+	return utils.MergeFlags(
+		flags,
 		&cli.IntFlag{
 			Name:  "settings-cachetime",
 			Value: 3600,
 			Usage: "Time in seconds where settingsV1 caches your request",
 		},
-	}
+	)
 }
 
 func (c *SettingsV1Handler) Initialized() bool {
