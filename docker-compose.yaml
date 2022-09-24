@@ -102,6 +102,28 @@ services:
     depends_on:
       - nats
 
+  geoip_v1:
+    restart: ${DOCKER_RESTART}
+    image: ${DOCKER_ORG_WARZONE}/microlobby-geoip-v1:latest
+    environment:
+      - GEOIP_MAXMIND_ACCOUNT_ID=${GEOIP_MAXMIND_ACCOUNT_ID}
+      - GEOIP_MAXMIND_LICENSE_KEY=${GEOIP_MAXMIND_LICENSE_KEY}
+      - MICRO_AUTH2_CLIENT=${MICRO_AUTH2_CLIENT}
+      - MICRO_AUTH2_JWT_AUDIENCES=${MICRO_AUTH2_JWT_AUDIENCES}
+      - MICRO_AUTH2_JWT_PRIV_KEY=${MICRO_AUTH2_JWT_PRIV_KEY}
+      - MICRO_AUTH2_JWT_PUB_KEY=${MICRO_AUTH2_JWT_PUB_KEY}
+      - MICRO_TRANSPORT=${MICRO_TRANSPORT}
+      - MICRO_TRANSPORT_ADDRESS=${MICRO_TRANSPORT_ADDRESS}
+      - MICRO_REGISTRY=${MICRO_REGISTRY}
+      - MICRO_REGISTRY_ADDRESS=${MICRO_REGISTRY_ADDRESS}
+      - MICRO_BROKER=${MICRO_BROKER}
+      - MICRO_BROKER_ADDRESS=${MICRO_BROKER_ADDRESS}
+      - LOG_LEVEL=${LOG_LEVEL}
+    volumes:
+      - geoip:/data
+    depends_on:
+      - nats
+
   auth:
     restart: ${DOCKER_RESTART}
     image: ${DOCKER_ORG_JO_MICRO}/auth2-sql:latest
@@ -198,3 +220,4 @@ volumes:
   redis: {}
   postgresd: {}
   pgadmin: {}
+  geoip: {}

@@ -127,6 +127,24 @@ curl -s -d @./docs/json-test/gamedb_v1_create.json -H "Content-Type: application
 curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/gamedb/v1/ | jq
 ```
 
+- Query GeoIP2-Lite
+
+```bash
+curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" $MICROLOBBY/api/geoip/v1/city/142.250.203.99/en | jq
+```
+
+```json
+{
+  "isoCode": "US",
+  "timeZone": "America/Chicago",
+  "countryName": {
+    "en": "United States"
+  },
+  "latitude": 37.751,
+  "longitude": -97.822
+}
+```
+
 ### Remove everything or start from new
 
 ```bash

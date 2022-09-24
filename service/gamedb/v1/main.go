@@ -25,7 +25,7 @@ func main() {
 		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.Flags())...),
+		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
 	)
 	registry.SetService(service)
 
@@ -44,10 +44,12 @@ func main() {
 			cLogrus, err := component.Logrus(registry)
 			if err != nil {
 				logger.Fatal(err)
+				return err
 			}
 
 			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
 				cLogrus.Logger().Fatal(err)
+				return err
 			}
 
 			authVerifier := endpointroles.NewVerifier(
@@ -108,7 +110,8 @@ func main() {
 			r.RegisterWithServer(service.Server())
 
 			if err := gdbH.Start(); err != nil {
-				logger.Fatal(err)
+				cLogrus.Logger().Fatal(err)
+				return err
 			}
 			gamedbpb.RegisterGameDBV1ServiceHandler(service.Server(), gdbH)
 

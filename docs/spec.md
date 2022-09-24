@@ -98,7 +98,7 @@ HTTP Code: 401
 {
     "errors"          : [
         {
-            "id"         : "USER_EXISTS",
+            "id"          : "USER_EXISTS",
             "message"     : "That user name exists, try a different user name"
         }
     ]
@@ -377,6 +377,8 @@ Called by an authenticated user to "join" a game. This registers the intent on t
 
 **ACL**: Any authenticated user with "join" privileges, rate-limited
 
+**RATE-Limit** user: 5 per minute, 60 per hour
+
 **returns**: JSON object
 
 ```json
@@ -396,7 +398,7 @@ Headers:
 ```text
 X-UserRateLimit-Limit: 5
 X-UserRateLimit-Remaining: 0
-X-UserRateLimit-Reset: <unix server timestamp>
+X-UserRateLimit-Reset: <unix timestamp from server>
 ```
 
 ```json
@@ -417,7 +419,7 @@ Authenticate the join request that the host received from a new player, using th
 
 **ACL**: The game's host (authenticated user) only
 
-**arguments**: `secret`, `slot`, `team`
+**arguments**: `player-uuid`, `secret`, `slot`, `team`
 
 **returns**: a JSON object, containing (on success) the validated player details
 
@@ -472,13 +474,13 @@ Let the lobbyserver know that the connecting player have been kicked during the 
 
 **CLIENT NOTES**:
 
-- The client **MUST** call this endpoint whenever a player got kicked from the game, this is important for Hoster stats.
+- The client **MUST** call this endpoint whenever he got kicked from the game, this is important for Hoster stats.
 
 **SERVER NOTES**:
 
 - The Lobbyserver updates the host players profile and add +1 to players_kicked.
 
-**ACL**: Any authenticated user that is in that game.
+**ACL**: An authenticated user that is in that game.
 
 Request:
 

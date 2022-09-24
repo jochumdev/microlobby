@@ -14,7 +14,7 @@ tasks:
       - task: build:postgresd
       - task: build:volume
       - task: build:download
-      - task: build:protoc
+      - task: protoc
       - task: build
       - task: up
       - task: ps
@@ -56,7 +56,7 @@ tasks:
         vars:
           CLI_ARGS: "go mod download"
 
-  build:protoc:
+  protoc:
     desc: Generate shared protobuf files and those for a service
     sources:
       - shared/proto/**/*.proto
@@ -129,12 +129,23 @@ tasks:
         vars:
           SERVICE: badwords/v1
 
+  build:service:geoip/v1:
+    sources:
+      - ./go.sum
+      - ./service/geoip/v1/**/*.go
+      - ./shared/**/*.go
+    cmds:
+      - task: build:service
+        vars:
+          SERVICE: geoip/v1
+
   build:
     cmds:
       - task: build:service:gamedb/v1
       - task: build:service:lobby/v3
       - task: build:service:settings/v1
       - task: build:service:badwords/v1
+      - task: build:service:geoip/v1
 
   up:
     desc: Run all containers
@@ -142,16 +153,18 @@ tasks:
       - check:toolchain
     cmds:
       - DOCKER_BUILDKIT=0 docker-compose up -d --remove-orphans
+      # Always restart the router so it works with new containers
+      - DOCKER_BUILDKIT=0 docker-compose restart router
   
   ps:
     desc: Show running containers
     cmds:
-      - docker-compose ps
+      - podman ps -a
 
   logs:
     desc: Show docker logs
     cmds:
-      - docker-compose logs -f {{.CLI_ARGS}}
+      - podman logs -f {{.CLI_ARGS}}
 
   down:
     desc: Stopp all containers

@@ -23,7 +23,7 @@ func main() {
 		micro.Name(config.Name),
 		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
 		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.Flags())...),
+		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
 	)
 	registry.SetService(service)
 
