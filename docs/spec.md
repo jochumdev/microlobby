@@ -208,7 +208,7 @@ Creates a new game in the lobby (hosted by the current, authenticated user).
 
 **SERVER NOTES:**
 
-- The server obtains the connecting (public) IP address, and checks whether it is IPv4 or IPv6. This information is returned to the client (as `host/availability`), which can then inform the server of another IP address on which it is available via the **[/api/v1/lobby/&lt;UUID&gt;/add_ip](#apiv1lobbyltUUIDgtadd_ip)** endpoint.
+- The server obtains the connecting (public) IP address, and checks whether it is IPv4 or IPv6. This information is returned to the client (as `host/availability`), which can then inform the server of another IP address on which it is available via the **[/api/gamedb/v1/&lt;UUID&gt;/add_ip](#apiv1lobbyltUUIDgtadd_ip)** endpoint.
 - The verifiable connecting IP address must be that of the host. Thus, we cannot support HTTP proxies (which can claim to be forwarding for an IP address, but can lie), but we *can* support environments like AppEngine that can verifiably provide the connecting IP.
 - The server can also geolocate the IP address to determine the host's country.
   - One possible Python option: https://pythonhosted.org/python-geoip/
@@ -327,7 +327,7 @@ The server obtains the connecting IP address, (potentially) verifies the host is
 
 **CLIENT NOTES**:
 
-- It is expected that the client uses appropriate logic to connect to the server via either IPv4 or IPv6 (as appropriate - i.e. the opposite of the initial POST /api/v1/lobby connection that created the game.)
+- It is expected that the client uses appropriate logic to connect to the server via either IPv4 or IPv6 (as appropriate - i.e. the opposite of the initial `/api/gamedb/v1 : POST` connection that created the game.)
 
 **ACL**: The game's host (authenticated user) only
 
@@ -431,7 +431,6 @@ HTTP Code: 200
             "lifetime": {
                 "games": 101,
                 "hosted": 12,
-                "commends": 42,
                 "reports": 1,
                 "abandons": 2,
                 "players_kicked": 7
@@ -439,7 +438,6 @@ HTTP Code: 200
             "recent": {
                 "games": 20,
                 "hosted": 2,
-                "commends": 1,
                 "reports": 0,
                 "abandons": 2,
                 "players_kicked": 0
@@ -465,7 +463,7 @@ Delete a player from the game, game owners can delete any player by given then `
 **optional arguments**: `slot`
 
 
-## /api/v1/account : GET
+## /api/profile/v1/ : GET
 
 Get detailed information about the current authenticated user's account
 
@@ -486,7 +484,6 @@ Get detailed information about the current authenticated user's account
         "lifetime": {
             "games": 101,
             "hosted": 12,
-            "commends": 42,
             "reports": 1,
             "abandons": 2,
             "players_kicked": 7
@@ -494,7 +491,6 @@ Get detailed information about the current authenticated user's account
         "recent": {
             "games": 20,
             "hosted": 2,
-            "commends": 1,
             "reports": 0,
             "abandons": 2,
             "players_kicked": 0
@@ -512,7 +508,13 @@ Get detailed information about the current authenticated user's account
 }
 ```
 
-## /api/v1/account/change_password : PUT
+## /api/profile/v1/&lt;UUID&gt; : GET
+
+Same as profile /me but for foreign users.
+
+**ACL**: An admin
+
+## /api/auth/v1/password : PUT
 
 Change the current account's password
 
@@ -521,7 +523,7 @@ Change the current account's password
 **CLIENT NOTES**:
 
 - The existing password **must** be supplied, so we'll need UI that has two password fields (ideally, 3 - so the user must type the new password twice).
-- As with **/api/v1/login**, the "password" is actually a password-derived-key (using all the same specifics as noted above).
+- As with **/api/auth/v1/login**, the "password" is actually a password-derived-key (using all the same specifics as noted above).
 
 **SERVER NOTES**:
 
