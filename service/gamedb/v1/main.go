@@ -12,14 +12,22 @@ import (
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/gamedb/v1/config"
-	"wz2100.net/microlobby/service/gamedb/v1/handler/gamedb"
+	"wz2100.net/microlobby/service/gamedb/v1/gamedbhandler"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
 )
 
 func main() {
 	service := micro.NewService()
-	cReg := components.New(service, "gamedb", logruscomponent.New(), auth2.ClientAuthComponent(), buncomponent.New(), gamedb.New(), router.New())
+	cReg := components.New(
+		service,
+		"gamedb",
+		logruscomponent.New(),
+		auth2.ClientAuthComponent(),
+		buncomponent.New(),
+		gamedbhandler.New(),
+		router.New(),
+	)
 
 	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
 	auth2ClientReg.Register(jwtClient.New())

@@ -1,4 +1,4 @@
-package gamedb
+package gamedbhandler
 
 import (
 	"context"

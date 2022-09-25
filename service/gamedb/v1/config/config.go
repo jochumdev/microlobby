@@ -1,6 +1,9 @@
 package config
 
-const (
-	Name    = "microlobby.gamedb.v1"
+var (
 	Version = "not set"
+)
+
+const (
+	Name = "microlobby.gamedb.v1"
 )

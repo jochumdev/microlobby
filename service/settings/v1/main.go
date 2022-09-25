@@ -12,7 +12,7 @@ import (
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/settings/v1/config"
-	"wz2100.net/microlobby/service/settings/v1/handler/settings"
+	"wz2100.net/microlobby/service/settings/v1/settingshandler"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 )
@@ -24,7 +24,7 @@ func main() {
 		auth2.ClientAuthComponent(),
 		buncomponent.New(),
 		router.New(),
-		settings.New(),
+		settingshandler.New(),
 	)
 
 	auth2ClientReg := auth2.ClientAuthMustReg(cReg)

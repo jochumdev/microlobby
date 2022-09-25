@@ -5,6 +5,5 @@ var (
 )
 
 const (
-	Name      = "microlobby.settings.v1"
-	RouterURI = "api/settings/v1"
+	Name = "microlobby.settings.v1"
 )

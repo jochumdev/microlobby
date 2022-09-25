@@ -10,15 +10,22 @@ import (
 	"jochum.dev/jo-micro/components"
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
+	"wz2100.net/microlobby/service/badwords/v1/badwordshandler"
 	"wz2100.net/microlobby/service/badwords/v1/config"
-	"wz2100.net/microlobby/service/badwords/v1/handler/badwords"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
 
 func main() {
 	service := micro.NewService()
-	cReg := components.New(service, "badwords", logruscomponent.New(), auth2.ClientAuthComponent(), badwords.New(), router.New())
+	cReg := components.New(
+		service,
+		"badwords",
+		logruscomponent.New(),
+		auth2.ClientAuthComponent(),
+		badwordshandler.New(),
+		router.New(),
+	)
 
 	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
 	auth2ClientReg.Register(jwtClient.New())

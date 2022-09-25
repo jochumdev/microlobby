@@ -1,4 +1,4 @@
-package badwords
+package badwordshandler
 
 import (
 	"context"

@@ -11,7 +11,7 @@ import (
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/lobby/v3/config"
-	"wz2100.net/microlobby/service/lobby/v3/handler/lobby"
+	"wz2100.net/microlobby/service/lobby/v3/lobbyhandler"
 	"wz2100.net/microlobby/service/settings"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 )
@@ -23,7 +23,7 @@ func main() {
 		"lobby_v3",
 		logruscomponent.New(),
 		auth2.ClientAuthComponent(),
-		lobby.New(),
+		lobbyhandler.New(),
 		router.New(),
 		settings.New(),
 	)
