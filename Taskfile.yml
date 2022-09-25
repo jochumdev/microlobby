@@ -59,8 +59,7 @@ tasks:
   protoc:
     desc: Generate shared protobuf files and those for a service
     sources:
-      - shared/proto/**/*.proto
-      - service/**/*.proto
+      - ./**/*.proto
     cmds:
       - task: builder
         vars:
@@ -68,6 +67,8 @@ tasks:
 
   build:service:
     vars:
+      DATE:
+        sh: date -u -Iseconds
       GOVOL_PATH:
         sh: podman volume inspect --format "{{"{{"}}.Mountpoint{{"}}"}}" microlobby_go
       BUILD_MOUNT_FOLDER_INT:
@@ -78,6 +79,7 @@ tasks:
           -v "{{.GOVOL_PATH}}:/go:rw" 
           -v "{{.BUILD_MOUNT_FOLDER_INT}}:{{.BUILD_MOUNT_FOLDER_INT}}" 
           -t {{.DOCKER_ORG_WARZONE}}/microlobby-$(echo {{.SERVICE}} | sed 's#/#-#g'):latest 
+          --build-arg=CACHEBUST={{.DATE}}
           --build-arg=DOCKER_IO={{.DOCKER_IO}} 
           --build-arg=DOCKER_ORG_JO_MICRO={{.DOCKER_ORG_JO_MICRO}} 
           --build-arg=SERVICE={{.SERVICE}} 

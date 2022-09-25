@@ -7,7 +7,6 @@ import (
 	"jochum.dev/jo-micro/auth2"
 	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
 	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
-	"jochum.dev/jo-micro/buncomponent"
 	"jochum.dev/jo-micro/components"
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
@@ -24,7 +23,6 @@ func main() {
 		"lobby_v3",
 		logruscomponent.New(),
 		auth2.ClientAuthComponent(),
-		buncomponent.New(),
 		lobby.New(),
 		router.New(),
 		settings.New(),

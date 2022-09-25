@@ -13,6 +13,7 @@ WORKDIR /code/service/${SERVICE}
 
 # RUN go mod download
 ENV GOPATH="/go"
+ARG CACHEBUST=1
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -ldflags="-w -s" -o /usr/local/bin/microservice
 
 
