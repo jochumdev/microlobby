@@ -2,19 +2,19 @@ package gamedb
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
+	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4/errors"
+	"go-micro.dev/v4/server"
 	"jochum.dev/jo-micro/auth2"
-	"wz2100.net/microlobby/service/gamedb/v1/config"
+	"jochum.dev/jo-micro/buncomponent"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/gamedb/v1/db"
-	"wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
 )
-
-const pkgPath = config.PkgPath + "/handler/gamedb"
 
 func dbPlayerToProto(dp *db.GamePlayer) (*gamedbpb.Player, error) {
 	return &gamedbpb.Player{
@@ -114,57 +114,112 @@ func protoGameToDB(pg *gamedbpb.Game, dg *db.Game) error {
 	return nil
 }
 
+const Name = "gamedbHandler"
+
 type Handler struct {
-	cRegistry *component.Registry
-	logrus    component.LogrusComponent
-	svcName   string
+	cReg        *components.Registry
+	initialized bool
 }
 
-func NewHandler(cregistry *component.Registry) (*Handler, error) {
-	h := &Handler{
-		cRegistry: cregistry,
-		svcName:   cregistry.Service.Name(),
-	}
-
-	return h, nil
+func New() *Handler {
+	return &Handler{initialized: false}
 }
 
-func (h *Handler) Start() error {
-	logrus, err := component.Logrus(h.cRegistry)
-	if err != nil {
-		return errors.FromError(err)
-	}
-	h.logrus = logrus
+func MustReg(cReg *components.Registry) *Handler {
+	return cReg.Must(Name).(*Handler)
+}
 
+func (h *Handler) Name() string {
+	return Name
+}
+
+func (h *Handler) Priority() int {
+	return 100
+}
+
+func (h *Handler) Initialized() bool {
+	return h.initialized
+}
+
+func (h *Handler) Init(components *components.Registry, cli *cli.Context) error {
+	if h.initialized {
+		return nil
+	}
+
+	h.cReg = components
+
+	r := router.MustReg(h.cReg)
+	r.Add(
+		router.NewRoute(
+			router.Method(router.MethodGet),
+			router.Path("/"),
+			router.Endpoint(gamedbpb.GameDBV1Service.List),
+			router.Params("id", "history", "name", "limit", "offset"),
+			router.AuthRequired(),
+		),
+		router.NewRoute(
+			router.Method(router.MethodPost),
+			router.Path("/"),
+			router.Endpoint(gamedbpb.GameDBV1Service.Create),
+			router.AuthRequired(),
+		),
+		router.NewRoute(
+			router.Method(router.MethodPut),
+			router.Path("/:id"),
+			router.Endpoint(gamedbpb.GameDBV1Service.Update),
+			router.Params("id"),
+			router.AuthRequired(),
+		),
+		router.NewRoute(
+			router.Method(router.MethodDelete),
+			router.Path("/:id"),
+			router.Endpoint(gamedbpb.GameDBV1Service.Delete),
+			router.Params("id"),
+			router.AuthRequired(),
+		),
+	)
+
+	gamedbpb.RegisterGameDBV1ServiceHandler(h.cReg.Service().Server(), h)
+
+	h.initialized = true
 	return nil
 }
-func (h *Handler) Stop() error { return nil }
+
+func (h *Handler) Stop() error {
+	return nil
+}
+
+func (h *Handler) Flags(r *components.Registry) []cli.Flag {
+	return []cli.Flag{}
+}
+
+func (h *Handler) Health(context context.Context) error {
+	return nil
+}
+
+func (h *Handler) WrapHandlerFunc(ctx context.Context, req server.Request, rsp interface{}) error {
+	return nil
+}
 
 func (h *Handler) List(ctx context.Context, in *gamedbpb.ListRequest, out *gamedbpb.ListResponse) error {
-	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
+	user, err := auth2.ClientAuthMustReg(h.cReg).Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	if in.History {
 		if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
-			return errors.New(h.svcName, "Your not allowed to make history requests", http.StatusBadRequest)
+			return errors.BadRequest("NOT_ALLOWED", "Your not allowed to make history requests")
 		}
 	}
 
-	// Get the database engine
-	bun, err := component.Bun(h.cRegistry)
-	if err != nil {
-		return errors.FromError(err)
-	}
-
-	count, err := bun.NewSelect().Model((*db.Game)(nil)).Count(ctx)
+	count, err := buncomponent.MustReg(h.cReg).Bun().NewSelect().Model((*db.Game)(nil)).Count(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	var games []db.Game
-	err = bun.NewSelect().
+	err = buncomponent.MustReg(h.cReg).Bun().NewSelect().
 		Model(&games).
 		Relation("Players").
 		ColumnExpr("g.*").
@@ -191,18 +246,18 @@ func (h *Handler) List(ctx context.Context, in *gamedbpb.ListRequest, out *gamed
 }
 
 func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) error {
-	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
+	user, err := auth2.ClientAuthMustReg(h.cReg).Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	if dg.V3GameId != 0 {
 		if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
-			return errors.New(h.svcName, "You'r not allowed to make V3GameID requests", http.StatusBadRequest)
+			return errors.BadRequest("NOT_ALLOWED", "You'r not allowed to make V3GameID requests")
 		}
 
 		if dg.LobbyVersion != 3 {
-			return errors.New(h.svcName, "V3GameID is only allowed for LobbyVersion 3", http.StatusBadRequest)
+			return errors.BadRequest("NOT_ALLOWED_V3_GAME", "V3GameID is only allowed for LobbyVersion 3")
 		}
 	}
 
@@ -214,11 +269,11 @@ func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) err
 		}
 	}
 	if nHostPlayer == nil {
-		return errors.New(h.svcName, "No host player given or IP's don't match", http.StatusBadRequest)
+		return errors.BadRequest("NO_MATCH", "No host player given or IP's don't match")
 	}
 
 	if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) && nHostPlayer.UUID.String() != user.Id {
-		return errors.New(h.svcName, "Your only allowed to host own games", http.StatusBadRequest)
+		return errors.BadRequest("NOT_ALLOWED", "Your only allowed to host own games")
 	}
 
 	// Update?
@@ -240,7 +295,7 @@ func (h *Handler) checkGame(ctx context.Context, dg *db.Game, oldG *db.Game) err
 			oldG.VerMajor != dg.VerMajor ||
 			oldG.VerMinor != dg.VerMinor ||
 			oldG.IsPure != dg.IsPure {
-			return errors.New(h.svcName, "An update is not allowed", http.StatusMethodNotAllowed)
+			return errors.MethodNotAllowed("UPDATE_NOT_ALLOWED", "An update is not allowed")
 		}
 	}
 
@@ -258,13 +313,7 @@ func (h *Handler) Create(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 		return err
 	}
 
-	// Get the database engine
-	bun, err := component.Bun(h.cRegistry)
-	if err != nil {
-		return errors.FromError(err)
-	}
-
-	_, err = bun.NewInsert().
+	_, err = buncomponent.MustReg(h.cReg).Bun().NewInsert().
 		Model(dg).
 		Exec(ctx)
 	if err != nil {
@@ -273,7 +322,7 @@ func (h *Handler) Create(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 
 	for _, dp := range dg.Players {
 		dp.GameID = dg.Id
-		_, err = bun.NewInsert().
+		_, err = buncomponent.MustReg(h.cReg).Bun().NewInsert().
 			Model(dp).
 			Exec(ctx)
 		if err != nil {
@@ -296,14 +345,8 @@ func (h *Handler) Update(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 		return errors.FromError(err)
 	}
 
-	// Get the database engine
-	bun, err := component.Bun(h.cRegistry)
-	if err != nil {
-		return errors.FromError(err)
-	}
-
 	var result db.Game
-	err = bun.NewSelect().
+	err = buncomponent.MustReg(h.cReg).Bun().NewSelect().
 		Model(&result).
 		Relation("Players").
 		Limit(1).
@@ -317,7 +360,7 @@ func (h *Handler) Update(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 	}
 
 	// Finaly update
-	_, err = bun.NewUpdate().Model(dg).Exec(ctx)
+	_, err = buncomponent.MustReg(h.cReg).Bun().NewUpdate().Model(dg).Exec(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
@@ -331,19 +374,13 @@ func (h *Handler) Update(ctx context.Context, in *gamedbpb.Game, out *gamedbpb.G
 }
 
 func (h *Handler) Delete(ctx context.Context, in *gamedbpb.DeleteRequest, out *empty.Empty) error {
-	// Get the database engine
-	bun, err := component.Bun(h.cRegistry)
-	if err != nil {
-		return err
-	}
-
-	user, err := auth2.ClientAuthRegistry().Plugin().Inspect(ctx)
+	user, err := auth2.ClientAuthMustReg(h.cReg).Plugin().Inspect(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}
 	if !auth2.IntersectsRoles(user, auth2.RolesServiceAndAdmin...) {
 		var dg db.Game
-		err = bun.NewSelect().
+		err = buncomponent.MustReg(h.cReg).Bun().NewSelect().
 			Model(&dg).
 			Relation("Players").
 			Limit(1).
@@ -360,16 +397,16 @@ func (h *Handler) Delete(ctx context.Context, in *gamedbpb.DeleteRequest, out *e
 			}
 		}
 		if nHostPlayer == nil {
-			return errors.New(h.svcName, "No host player given or IP's don't match", http.StatusBadRequest)
+			return errors.BadRequest("NO_MATCH", "No host player given or IP's don't match")
 		}
 
 		if nHostPlayer.UUID.String() != user.Id {
-			return errors.New(h.svcName, "Your not allowed to delete foreign games", http.StatusBadRequest)
+			return errors.BadRequest("NOT_ALLOWED", "Your not allowed to delete foreign games")
 		}
 	}
 
 	// Execute the Delete
-	_, err = bun.NewDelete().Model((*db.Game)(nil)).Where("g.id = ?", in.Id).Exec(ctx)
+	_, err = buncomponent.MustReg(h.cReg).Bun().NewDelete().Model((*db.Game)(nil)).Where("g.id = ?", in.Id).Exec(ctx)
 	if err != nil {
 		return errors.FromError(err)
 	}

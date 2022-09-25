@@ -1,63 +1,44 @@
 package main
 
 import (
-	"log"
-
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
+	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
 	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/badwords/v1/config"
-	bwHandler "wz2100.net/microlobby/service/badwords/v1/handler/badwords"
-	scomponent "wz2100.net/microlobby/service/settings/component"
-	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/service/badwords/v1/handler/badwords"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), scomponent.NewSettingsV1())
+	service := micro.NewService()
+	cReg := components.New(service, "badwords", logruscomponent.New(), auth2.ClientAuthComponent(), badwords.New(), router.New())
 
-	auth2ClientReg := auth2.ClientAuthRegistry()
-
-	service := micro.NewService(
-		micro.Name(config.Name),
-		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
-		micro.WrapHandler(auth2ClientReg.Wrapper()),
-	)
-	registry.SetService(service)
-
-	bwH, err := bwHandler.NewHandler(registry)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
+	auth2ClientReg.Register(jwtClient.New())
 
 	service.Init(
+		micro.Name(config.Name),
+		micro.Version(config.Version),
+		micro.Flags(cReg.AppendFlags([]cli.Flag{})...),
+		micro.WrapHandler(auth2ClientReg.WrapHandler()),
 		micro.Action(func(c *cli.Context) error {
-			if err := registry.Init(c); err != nil {
+			// Start/Init the components
+			if err := cReg.Init(c); err != nil {
+				logger.Fatal(err)
 				return err
 			}
 
-			cLogrus, err := component.Logrus(registry)
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			if err := auth2ClientReg.Init(
-				auth2.CliContext(c),
-				auth2.Service(service),
-				auth2.Logrus(cLogrus.Logger()),
-			); err != nil {
-				cLogrus.Logger().Fatal(err)
-			}
+			logger := logruscomponent.MustReg(cReg).Logger()
 
 			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(cLogrus.Logger()),
+				endpointroles.WithLogrus(logger),
 			)
 			authVerifier.AddRules(
 				endpointroles.RouterRule,
@@ -78,43 +59,21 @@ func main() {
 					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
 				),
 			)
-			auth2ClientReg.Plugin().SetVerifier(authVerifier)
-
-			s := service.Server()
-			r := router.NewHandler(
-				config.RouterURI,
-				router.NewRoute(
-					router.Method(router.MethodGet),
-					router.Path("/check/:request"),
-					router.Endpoint(badwordspb.BadwordsV1Service.Check),
-					router.Params("request"),
-				),
-				router.NewRoute(
-					router.Method(router.MethodPost),
-					router.Path("/check"),
-					router.Endpoint(badwordspb.BadwordsV1Service.Check),
-				),
-			)
-			r.RegisterWithServer(s)
-
-			if err := bwH.Start(); err != nil {
-				log.Fatalln(err)
-			}
-			badwordspb.RegisterBadwordsV1ServiceHandler(s, bwH)
+			auth2.ClientAuthMustReg(cReg).Plugin().SetVerifier(authVerifier)
 
 			return nil
 		}),
 	)
 
+	// Run the server
 	if err := service.Run(); err != nil {
-		log.Fatalln(err)
+		logruscomponent.MustReg(cReg).Logger().Fatal(err)
+		return
 	}
 
-	if err := bwH.Stop(); err != nil {
-		log.Fatalln(err)
-	}
-
-	if err := auth2ClientReg.Stop(); err != nil {
+	// Stop the components
+	if err := cReg.Stop(); err != nil {
 		logger.Fatal(err)
+		return
 	}
 }

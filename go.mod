@@ -20,8 +20,11 @@ require (
 	github.com/urfave/cli/v2 v2.16.3
 	go-micro.dev/v4 v4.8.1
 	google.golang.org/protobuf v1.28.1
-	jochum.dev/jo-micro/auth2 v0.3.5
-	jochum.dev/jo-micro/router v0.3.9
+	jochum.dev/jo-micro/auth2 v0.4.2
+	jochum.dev/jo-micro/buncomponent v0.0.5
+	jochum.dev/jo-micro/components v0.3.0
+	jochum.dev/jo-micro/logruscomponent v0.0.4
+	jochum.dev/jo-micro/router v0.4.3
 )
 
 require (
@@ -40,6 +43,7 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-git/go-git/v5 v5.4.2 // indirect
+	github.com/go-micro/plugins/v4/logger/logrus v1.1.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
@@ -50,6 +54,10 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
+	github.com/jackc/pgx-logrus v0.0.0-20220919124836-b099d8ce75da // indirect
+	github.com/jackc/pgx/v5 v5.0.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.10 // indirect

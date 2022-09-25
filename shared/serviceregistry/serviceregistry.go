@@ -6,7 +6,7 @@ import (
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/errors"
 	"go-micro.dev/v4/registry"
-	"wz2100.net/microlobby/shared/component"
+	"jochum.dev/jo-micro/components"
 )
 
 type ServiceListResult map[*registry.Service][]*registry.Endpoint
@@ -16,13 +16,13 @@ type WrappedEndpoint struct {
 	Handler string
 }
 
-func Endpoints(ctx context.Context, cRegistry *component.Registry, service *registry.Service) ([]*registry.Endpoint, error) {
+func Endpoints(ctx context.Context, cRegistry *components.Registry, service *registry.Service) ([]*registry.Endpoint, error) {
 	if len(service.Endpoints) > 0 {
 		eps := append([]*registry.Endpoint{}, service.Endpoints...)
 		return eps, nil
 	}
 	// lookup the endpoints otherwise
-	newServices, err := cRegistry.Service.Options().Registry.GetService(service.Name)
+	newServices, err := cRegistry.Service().Options().Registry.GetService(service.Name)
 	if err != nil {
 		return []*registry.Endpoint{}, err
 	}
@@ -38,8 +38,8 @@ func Endpoints(ctx context.Context, cRegistry *component.Registry, service *regi
 	return eps, nil
 }
 
-func ListEndpoints(ctx context.Context, cRegistry *component.Registry) (ServiceListResult, error) {
-	services, err := cRegistry.Service.Options().Registry.ListServices()
+func ListEndpoints(ctx context.Context, cRegistry *components.Registry) (ServiceListResult, error) {
+	services, err := cRegistry.Service().Options().Registry.ListServices()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func ListEndpoints(ctx context.Context, cRegistry *component.Registry) (ServiceL
 	return endpoints, nil
 }
 
-func FindByEndpoint(ctx context.Context, cRegistry *component.Registry, endpoint string) ([]*registry.Service, error) {
+func FindByEndpoint(ctx context.Context, cRegistry *components.Registry, endpoint string) ([]*registry.Service, error) {
 	services, err := ListEndpoints(ctx, cRegistry)
 	if err != nil {
 		return []*registry.Service{}, err
@@ -75,7 +75,7 @@ func FindByEndpoint(ctx context.Context, cRegistry *component.Registry, endpoint
 	return result, nil
 }
 
-func CallEndPoints(ctx context.Context, cRegistry *component.Registry, endpoint string, req, out interface{}) error {
+func CallEndPoints(ctx context.Context, cRegistry *components.Registry, endpoint string, req, out interface{}) error {
 	services, err := ListEndpoints(ctx, cRegistry)
 	if err != nil {
 		return errors.FromError(err)
@@ -84,8 +84,8 @@ func CallEndPoints(ctx context.Context, cRegistry *component.Registry, endpoint 
 	for svc, eps := range services {
 		for _, ep := range eps {
 			if ep.Name == endpoint {
-				req := cRegistry.Client.NewRequest(svc.Name, endpoint, req, client.WithContentType("application/json"))
-				if err := cRegistry.Client.Call(ctx, req, out); err != nil {
+				req := cRegistry.Service().Client().NewRequest(svc.Name, endpoint, req, client.WithContentType("application/json"))
+				if err := cRegistry.Service().Client().Call(ctx, req, out); err != nil {
 					return errors.FromError(err)
 				}
 			}

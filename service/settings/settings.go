@@ -1,77 +1,49 @@
-package component
+package settings
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
+	"go-micro.dev/v4/errors"
+
 	"github.com/urfave/cli/v2"
+	"jochum.dev/jo-micro/components"
 	"wz2100.net/microlobby/service/settings/v1/config"
-	scomponent "wz2100.net/microlobby/shared/component"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 	"wz2100.net/microlobby/shared/utils"
 )
 
-type SettingsV1Key struct{}
+const Name = "settingsV1client"
 
-type SettingsV1Handler struct {
+type Handler struct {
 	initialized   bool
+	cReg          *components.Registry
 	cacheGetLock  *sync.RWMutex
 	cacheGet      map[string]*settingsservicepb.Setting
 	cacheListLock *sync.RWMutex
 	cacheList     map[string][]*settingsservicepb.Setting
 }
 
-func SettingsV1FromContext(ctx context.Context) (*SettingsV1Handler, error) {
-	reg, err := scomponent.RegistryFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	s, err := SettingsV1(reg)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+func MustReg(cReg *components.Registry) *Handler {
+	return cReg.Must(Name).(*Handler)
 }
 
-func SettingsV1(reg *scomponent.Registry) (*SettingsV1Handler, error) {
-	sc, err := reg.Get(SettingsV1Key{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := sc.(*SettingsV1Handler)
-	if result == nil {
-		return nil, errors.New("settingsv1 is nil")
-	}
-
-	return result, nil
-}
-
-func sClientFromContext(context context.Context) (settingsservicepb.SettingsV1Service, error) {
-	// Get the micro client from the registry
-	reg, err := scomponent.RegistryFromContext(context)
-	if err != nil {
-		return nil, err
-	}
-
+func (h *Handler) sClient() (settingsservicepb.SettingsV1Service, error) {
 	// Wait until the service is here
-	_, err = utils.ServiceRetryGet(reg.Service, config.Name, 10)
+	_, err := utils.ServiceRetryGet(h.cReg.Service(), config.Name, 10)
 	if err != nil {
 		return nil, err
 	}
 
-	service := settingsservicepb.NewSettingsV1Service(config.Name, reg.Client)
+	service := settingsservicepb.NewSettingsV1Service(config.Name, h.cReg.Service().Client())
 	return service, nil
 
 }
 
 // NewLog creates a new component
-func NewSettingsV1() *SettingsV1Handler {
-	return &SettingsV1Handler{
+func New() *Handler {
+	return &Handler{
 		initialized:   false,
 		cacheGetLock:  &sync.RWMutex{},
 		cacheGet:      make(map[string]*settingsservicepb.Setting),
@@ -80,51 +52,53 @@ func NewSettingsV1() *SettingsV1Handler {
 	}
 }
 
-func (c *SettingsV1Handler) Priority() int8 {
+func (c *Handler) Priority() int {
 	return 30
 }
 
-func (c *SettingsV1Handler) Key() interface{} {
-	return SettingsV1Key{}
+func (c *Handler) Name() string {
+	return Name
 }
 
-func (c *SettingsV1Handler) Name() string {
-	return "shared.settingsv1"
-}
-
-func (c *SettingsV1Handler) MergeFlags(flags []cli.Flag) []cli.Flag {
-	return utils.MergeFlags(
-		flags,
+func (c *Handler) Flags(cReg *components.Registry) []cli.Flag {
+	return []cli.Flag{
 		&cli.IntFlag{
-			Name:  "settings-cachetime",
-			Value: 3600,
+			Name:  "settings_cachetime",
 			Usage: "Time in seconds where settingsV1 caches your request",
+			Value: 3600,
 		},
-	)
+	}
 }
 
-func (c *SettingsV1Handler) Initialized() bool {
+func (c *Handler) Initialized() bool {
 	return c.initialized
 }
 
-func (c *SettingsV1Handler) Init(registry *scomponent.Registry, cli *cli.Context) error {
-	if c.initialized {
+func (h *Handler) Init(cReg *components.Registry, cli *cli.Context) error {
+	if h.initialized {
 		return nil
 	}
 
-	c.initialized = true
+	h.cReg = cReg
+
+	h.initialized = true
 	return nil
 }
 
-func (c *SettingsV1Handler) Health(context context.Context) (string, bool) {
-	if !c.Initialized() {
-		return "Not initialized", true
-	}
-
-	return "All fine", false
+func (h *Handler) Stop() error {
+	h.initialized = false
+	return nil
 }
 
-func (c *SettingsV1Handler) Get(ctx context.Context, id, ownerId, service, name string) (*settingsservicepb.Setting, error) {
+func (c *Handler) Health(context context.Context) error {
+	if !c.Initialized() {
+		return errors.InternalServerError("NOT_INITIALIZED", "Not initialized")
+	}
+
+	return nil
+}
+
+func (c *Handler) Get(ctx context.Context, id, ownerId, service, name string) (*settingsservicepb.Setting, error) {
 	// Build the request
 	req := &settingsservicepb.GetRequest{}
 	cacheKey := ""
@@ -148,7 +122,7 @@ func (c *SettingsV1Handler) Get(ctx context.Context, id, ownerId, service, name 
 			cacheKey = req.Service
 		}
 	} else {
-		return nil, errors.New("invalid arguments")
+		return nil, errors.BadRequest("INVALID_ARGUMENTS", "invalid arguments")
 	}
 
 	// Check cache and return from cache
@@ -159,7 +133,7 @@ func (c *SettingsV1Handler) Get(ctx context.Context, id, ownerId, service, name 
 	}
 	c.cacheGetLock.RUnlock()
 
-	client, err := sClientFromContext(ctx)
+	client, err := c.sClient()
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +151,7 @@ func (c *SettingsV1Handler) Get(ctx context.Context, id, ownerId, service, name 
 	return result, nil
 }
 
-func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name string) ([]*settingsservicepb.Setting, error) {
+func (c *Handler) List(ctx context.Context, id, ownerId, service, name string) ([]*settingsservicepb.Setting, error) {
 	// Build the request
 	req := &settingsservicepb.ListRequest{}
 	cacheKey := ""
@@ -201,7 +175,7 @@ func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name
 			cacheKey = req.OwnerId
 		}
 	} else {
-		return nil, errors.New("invalid arguments")
+		return nil, errors.BadRequest("INVALID_ARGUMENTS", "invalid arguments")
 	}
 
 	// Check cache and return from cache
@@ -213,7 +187,7 @@ func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name
 	c.cacheListLock.RUnlock()
 
 	// Fetch
-	client, err := sClientFromContext(ctx)
+	client, err := c.sClient()
 	if err != nil {
 		return nil, err
 	}
@@ -230,27 +204,27 @@ func (c *SettingsV1Handler) List(ctx context.Context, id, ownerId, service, name
 	return result.Data, nil
 }
 
-func (c *SettingsV1Handler) Create(ctx context.Context, req *settingsservicepb.CreateRequest) (*settingsservicepb.Setting, error) {
+func (c *Handler) Create(ctx context.Context, req *settingsservicepb.CreateRequest) (*settingsservicepb.Setting, error) {
 	// Create
-	client, err := sClientFromContext(ctx)
+	client, err := c.sClient()
 	if err != nil {
 		return nil, err
 	}
 	return client.Create(ctx, req)
 }
 
-func (c *SettingsV1Handler) Update(ctx context.Context, req *settingsservicepb.UpdateRequest) (*settingsservicepb.Setting, error) {
+func (c *Handler) Update(ctx context.Context, req *settingsservicepb.UpdateRequest) (*settingsservicepb.Setting, error) {
 	// Update
-	client, err := sClientFromContext(ctx)
+	client, err := c.sClient()
 	if err != nil {
 		return nil, err
 	}
 	return client.Update(ctx, req)
 }
 
-func (c *SettingsV1Handler) Upsert(ctx context.Context, req *settingsservicepb.UpsertRequest) (*settingsservicepb.Setting, error) {
+func (c *Handler) Upsert(ctx context.Context, req *settingsservicepb.UpsertRequest) (*settingsservicepb.Setting, error) {
 	// Upsert
-	client, err := sClientFromContext(ctx)
+	client, err := c.sClient()
 	if err != nil {
 		return nil, err
 	}

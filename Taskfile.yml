@@ -129,23 +129,12 @@ tasks:
         vars:
           SERVICE: badwords/v1
 
-  build:service:geoip/v1:
-    sources:
-      - ./go.sum
-      - ./service/geoip/v1/**/*.go
-      - ./shared/**/*.go
-    cmds:
-      - task: build:service
-        vars:
-          SERVICE: geoip/v1
-
   build:
     cmds:
       - task: build:service:gamedb/v1
       - task: build:service:lobby/v3
       - task: build:service:settings/v1
       - task: build:service:badwords/v1
-      - task: build:service:geoip/v1
 
   up:
     desc: Run all containers

@@ -3,51 +3,49 @@ package main
 import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
+	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
 	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/buncomponent"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/settings/v1/config"
-	settingsHandler "wz2100.net/microlobby/service/settings/v1/handler/settings"
-	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/service/settings/v1/handler/settings"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 )
 
-const pkgPath = "wz2100.net/microlobby/service/settings/v1"
-
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN())
-
-	auth2ClientReg := auth2.ClientAuthRegistry()
-
-	service := micro.NewService(
-		micro.Name(config.Name),
-		micro.Version(config.Version),
-		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
+	service := micro.NewService()
+	cReg := components.New(service, "settings",
+		logruscomponent.New(),
+		auth2.ClientAuthComponent(),
+		buncomponent.New(),
+		router.New(),
+		settings.New(),
 	)
-	registry.SetService(service)
+
+	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
+	auth2ClientReg.Register(jwtClient.New())
 
 	service.Init(
-		micro.WrapHandler(component.RegistryMicroHdlWrapper(registry), auth2ClientReg.Wrapper()),
+		micro.Name(config.Name),
+		micro.Version(config.Version),
+		micro.Flags(cReg.AppendFlags([]cli.Flag{})...),
+		micro.WrapHandler(auth2ClientReg.WrapHandler()),
 		micro.Action(func(c *cli.Context) error {
-			if err := registry.Init(c); err != nil {
+			// Start/Init the components
+			if err := cReg.Init(c); err != nil {
+				logger.Fatal(err)
 				return err
 			}
 
-			cLogrus, err := component.Logrus(registry)
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
-				cLogrus.Logger().Fatal(err)
-			}
+			logger := logruscomponent.MustReg(cReg).Logger()
 
 			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(cLogrus.Logger()),
+				endpointroles.WithLogrus(logger),
 			)
 			authVerifier.AddRules(
 				endpointroles.RouterRule,
@@ -74,51 +72,18 @@ func main() {
 			)
 			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
-			// Register with https://jochum.dev/jo-micro/router
-			r := router.NewHandler(
-				config.RouterURI,
-				router.NewRoute(
-					router.Method(router.MethodGet),
-					router.Path("/"),
-					router.Endpoint(settingsservicepb.SettingsV1Service.List),
-					router.Params("id", "ownerId", "service", "name", "limit", "offset"),
-				),
-				router.NewRoute(
-					router.Method(router.MethodPost),
-					router.Path("/"),
-					router.Endpoint(settingsservicepb.SettingsV1Service.Create),
-				),
-				router.NewRoute(
-					router.Method(router.MethodGet),
-					router.Path("/:id"),
-					router.Endpoint(settingsservicepb.SettingsV1Service.Get),
-					router.Params("id", "ownerId", "service", "name"),
-				),
-				router.NewRoute(
-					router.Method(router.MethodPut),
-					router.Path("/:id"),
-					router.Endpoint(settingsservicepb.SettingsV1Service.Update),
-					router.Params("id"),
-				),
-			)
-			r.RegisterWithServer(service.Server())
-
-			settingsH, err := settingsHandler.NewHandler()
-			if err != nil {
-				cLogrus.WithFunc(pkgPath, "main").Fatal(err)
-				return err
-			}
-			settingsservicepb.RegisterSettingsV1ServiceHandler(service.Server(), settingsH)
-
 			return nil
 		}),
 	)
 
+	// Run the server
 	if err := service.Run(); err != nil {
-		logger.Fatal(err)
+		logruscomponent.MustReg(cReg).Logger().Fatal(err)
 	}
 
-	if err := auth2ClientReg.Stop(); err != nil {
+	// Stop the components
+	if err := cReg.Stop(); err != nil {
 		logger.Fatal(err)
+		return
 	}
 }

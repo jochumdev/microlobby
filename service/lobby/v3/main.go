@@ -3,76 +3,70 @@ package main
 import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
+	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
 	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/buncomponent"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
+	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/lobby/v3/config"
-	lobbyHandler "wz2100.net/microlobby/service/lobby/v3/handler/lobby"
-	scomponent "wz2100.net/microlobby/service/settings/component"
-	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/service/lobby/v3/handler/lobby"
+	"wz2100.net/microlobby/service/settings"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), scomponent.NewSettingsV1())
-
-	auth2ClientReg := auth2.ClientAuthRegistry()
-
-	service := micro.NewService(
-		micro.Name(config.Name),
-		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
+	service := micro.NewService()
+	cReg := components.New(
+		service,
+		"lobby_v3",
+		logruscomponent.New(),
+		auth2.ClientAuthComponent(),
+		buncomponent.New(),
+		lobby.New(),
+		router.New(),
+		settings.New(),
 	)
-	registry.SetService(service)
 
-	lobbyH, err := lobbyHandler.NewHandler(registry)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
+	auth2ClientReg.Register(jwtClient.New())
 
 	service.Init(
-		micro.WrapHandler(auth2ClientReg.Wrapper()),
+		micro.Name(config.Name),
+		micro.Version(config.Version),
+		micro.Flags(cReg.AppendFlags([]cli.Flag{})...),
+		micro.WrapHandler(auth2ClientReg.WrapHandler()),
 		micro.Action(func(c *cli.Context) error {
-			if err := registry.Init(c); err != nil {
+			// Start/Init the components
+			if err := cReg.Init(c); err != nil {
+				logger.Fatal(err)
 				return err
 			}
 
-			cLogrus, err := component.Logrus(registry)
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
-				cLogrus.Logger().Fatal(err)
-			}
+			logger := logruscomponent.MustReg(cReg).Logger()
 
 			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(cLogrus.Logger()),
+				endpointroles.WithLogrus(logger),
 			)
 			authVerifier.AddRules(
 				endpointroles.RouterRule,
 			)
 			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
-			if err := lobbyH.Start(); err != nil {
-				logger.Fatal(err)
-			}
-
 			return nil
 		}),
 	)
 
+	// Run the server
 	if err := service.Run(); err != nil {
-		logger.Fatal(err)
+		logruscomponent.MustReg(cReg).Logger().Fatal(err)
 	}
 
-	if err := lobbyH.Stop(); err != nil {
+	// Stop the components
+	if err := cReg.Stop(); err != nil {
 		logger.Fatal(err)
-	}
-
-	if err := auth2ClientReg.Stop(); err != nil {
-		logger.Fatal(err)
+		return
 	}
 }

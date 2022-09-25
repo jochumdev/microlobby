@@ -6,57 +6,69 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4/errors"
 	"jochum.dev/jo-micro/auth2"
-	"wz2100.net/microlobby/service/lobby/v3/config"
-	scomponent "wz2100.net/microlobby/service/settings/component"
-	"wz2100.net/microlobby/shared/component"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
+	"wz2100.net/microlobby/service/settings"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 )
-
-const pkgPath = config.PkgPath + "/handler/lobby"
 
 type Config struct {
 	Host string `json:"host"`
 	Port int32  `json:"port"`
 }
 
+const Name = "lobbyV3Handler"
+
 type Handler struct {
-	cRegistry *component.Registry
-	svcName   string
-	logrus    component.LogrusComponent
-	config    Config
-	listener  net.Listener
+	cReg        *components.Registry
+	initialized bool
+
+	config   Config
+	listener net.Listener
 }
 
-func NewHandler(cregistry *component.Registry) (*Handler, error) {
-	h := &Handler{
-		cRegistry: cregistry,
-		svcName:   cregistry.Service.Name(),
+func New() *Handler {
+	return &Handler{initialized: false}
+}
+
+func MustReg(cReg *components.Registry) *Handler {
+	return cReg.Must(Name).(*Handler)
+}
+
+func (h *Handler) Name() string {
+	return Name
+}
+
+func (h *Handler) Priority() int {
+	return 100
+}
+
+func (h *Handler) Initialized() bool {
+	return h.initialized
+}
+
+func (h *Handler) Init(components *components.Registry, cli *cli.Context) error {
+	if h.initialized {
+		return nil
 	}
 
-	return h, nil
-}
+	h.cReg = components
 
-func (h *Handler) Start() error {
-	logrus, err := component.Logrus(h.cRegistry)
+	ctx, err := auth2.ClientAuthMustReg(h.cReg).Plugin().ServiceContext(context.Background())
 	if err != nil {
 		return errors.FromError(err)
 	}
-	h.logrus = logrus
 
-	sCtx, err := auth2.ClientAuthRegistry().Plugin().ServiceContext(context.Background())
-	if err != nil {
-		return errors.FromError(err)
-	}
-	ctx := component.RegistryToContext(sCtx, h.cRegistry)
-	s, err := scomponent.SettingsV1(h.cRegistry)
+	s := settings.MustReg(h.cReg)
 	if err != nil {
 		return errors.FromError(err)
 	}
 
 	var c Config
-	se, err := s.Get(ctx, "", "", h.svcName, "config")
+	se, err := s.Get(ctx, "", "", h.cReg.Service().Name(), "config")
 	if err == nil {
 		err = json.Unmarshal(se.Content, &c)
 		if err != nil {
@@ -72,7 +84,7 @@ func (h *Handler) Start() error {
 		}
 
 		if _, err = s.Upsert(ctx, &settingsservicepb.UpsertRequest{
-			Service:     h.svcName,
+			Service:     h.cReg.Service().Name(),
 			Name:        "config",
 			Content:     craw,
 			RolesRead:   []string{auth2.ROLE_ADMIN, auth2.ROLE_SERVICE},
@@ -83,7 +95,7 @@ func (h *Handler) Start() error {
 	}
 	h.config = c
 
-	h.logrus.WithClassFunc(pkgPath, "Handler", "Start").Infof("Lobbyserver listening on: %s:%d", h.config.Host, h.config.Port)
+	logruscomponent.MustReg(h.cReg).Logger().Infof("Lobbyserver listening on: %s:%d", h.config.Host, h.config.Port)
 	h.listener, err = net.Listen("tcp", fmt.Sprintf("%s:%d", h.config.Host, h.config.Port))
 	if err != nil {
 		return errors.FromError(err)
@@ -93,13 +105,13 @@ func (h *Handler) Start() error {
 		for {
 			conn, err := h.listener.Accept()
 			if err != nil {
-				h.logrus.WithClassFunc(pkgPath, "Handler", "listener").Error(err)
+				logruscomponent.MustReg(h.cReg).Logger().Error(err)
 				break
 			}
 
-			sh, err := NewConnHandler(h.cRegistry, conn)
+			sh, err := NewConnHandler(h.cReg, conn)
 			if err != nil {
-				h.logrus.WithClassFunc(pkgPath, "Handler", "listener").Error(err)
+				logruscomponent.MustReg(h.cReg).Logger().Error(err)
 				continue
 			}
 
@@ -107,6 +119,7 @@ func (h *Handler) Start() error {
 		}
 	}()
 
+	h.initialized = true
 	return nil
 }
 
@@ -115,5 +128,13 @@ func (h *Handler) Stop() error {
 		h.listener.Close()
 		h.listener = nil
 	}
+	return nil
+}
+
+func (h *Handler) Flags(r *components.Registry) []cli.Flag {
+	return []cli.Flag{}
+}
+
+func (h *Handler) Health(context context.Context) error {
 	return nil
 }

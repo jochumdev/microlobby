@@ -3,57 +3,43 @@ package main
 import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4"
-	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
+	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
 	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
+	"jochum.dev/jo-micro/buncomponent"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/gamedb/v1/config"
-	gamedbHandler "wz2100.net/microlobby/service/gamedb/v1/handler/gamedb"
-	scomponent "wz2100.net/microlobby/service/settings/component"
-	"wz2100.net/microlobby/shared/component"
+	"wz2100.net/microlobby/service/gamedb/v1/handler/gamedb"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
 	"wz2100.net/microlobby/shared/proto/gamedbpb/v1"
 )
 
 func main() {
-	registry := component.NewRegistry(component.NewLogrusStdOut(), component.NewBUN(), scomponent.NewSettingsV1())
+	service := micro.NewService()
+	cReg := components.New(service, "gamedb", logruscomponent.New(), auth2.ClientAuthComponent(), buncomponent.New(), gamedb.New(), router.New())
 
-	auth2ClientReg := auth2.ClientAuthRegistry()
-
-	service := micro.NewService(
-		micro.Name(config.Name),
-		micro.Client(client.NewClient(client.ContentType("application/grpc+proto"))),
-		micro.Version(config.Version),
-		micro.Flags(auth2ClientReg.MergeFlags(registry.MergeFlags([]cli.Flag{}))...),
-	)
-	registry.SetService(service)
-
-	gdbH, err := gamedbHandler.NewHandler(registry)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	auth2ClientReg := auth2.ClientAuthMustReg(cReg)
+	auth2ClientReg.Register(jwtClient.New())
 
 	service.Init(
-		micro.WrapHandler(auth2ClientReg.Wrapper()),
+		micro.Name(config.Name),
+		micro.Version(config.Version),
+		micro.Flags(cReg.AppendFlags([]cli.Flag{})...),
+		micro.WrapHandler(auth2ClientReg.WrapHandler()),
 		micro.Action(func(c *cli.Context) error {
-			if err := registry.Init(c); err != nil {
-				return err
-			}
-
-			cLogrus, err := component.Logrus(registry)
-			if err != nil {
+			// Start/Init the components
+			if err := cReg.Init(c); err != nil {
 				logger.Fatal(err)
 				return err
 			}
 
-			if err := auth2ClientReg.Init(auth2.CliContext(c), auth2.Service(service), auth2.Logrus(cLogrus.Logger())); err != nil {
-				cLogrus.Logger().Fatal(err)
-				return err
-			}
+			logger := logruscomponent.MustReg(cReg).Logger()
 
 			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(cLogrus.Logger()),
+				endpointroles.WithLogrus(logger),
 			)
 			authVerifier.AddRules(
 				endpointroles.RouterRule,
@@ -76,58 +62,18 @@ func main() {
 			)
 			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
-			// Register with https://jochum.dev/jo-micro/router
-			r := router.NewHandler(
-				config.RouterURI,
-				router.NewRoute(
-					router.Method(router.MethodGet),
-					router.Path("/"),
-					router.Endpoint(gamedbpb.GameDBV1Service.List),
-					router.Params("id", "history", "name", "limit", "offset"),
-					router.AuthRequired(),
-				),
-				router.NewRoute(
-					router.Method(router.MethodPost),
-					router.Path("/"),
-					router.Endpoint(gamedbpb.GameDBV1Service.Create),
-					router.AuthRequired(),
-				),
-				router.NewRoute(
-					router.Method(router.MethodPut),
-					router.Path("/:id"),
-					router.Endpoint(gamedbpb.GameDBV1Service.Update),
-					router.Params("id"),
-					router.AuthRequired(),
-				),
-				router.NewRoute(
-					router.Method(router.MethodDelete),
-					router.Path("/:id"),
-					router.Endpoint(gamedbpb.GameDBV1Service.Delete),
-					router.Params("id"),
-					router.AuthRequired(),
-				),
-			)
-			r.RegisterWithServer(service.Server())
-
-			if err := gdbH.Start(); err != nil {
-				cLogrus.Logger().Fatal(err)
-				return err
-			}
-			gamedbpb.RegisterGameDBV1ServiceHandler(service.Server(), gdbH)
-
 			return nil
 		}),
 	)
 
+	// Run the server
 	if err := service.Run(); err != nil {
-		logger.Fatal(err)
+		logruscomponent.MustReg(cReg).Logger().Fatal(err)
 	}
 
-	if err := gdbH.Stop(); err != nil {
+	// Stop the components
+	if err := cReg.Stop(); err != nil {
 		logger.Fatal(err)
-	}
-
-	if err := auth2ClientReg.Stop(); err != nil {
-		logger.Fatal(err)
+		return
 	}
 }

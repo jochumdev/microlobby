@@ -6,7 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"wz2100.net/microlobby/shared/component"
+	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 )
 
 type gameStruct struct {
@@ -58,23 +59,17 @@ func byteToString(in []byte) string {
 }
 
 type ConnHandler struct {
-	cRegistry *component.Registry
-	logrus    component.LogrusComponent
-	conn      net.Conn
-	closing   bool
+	cReg    *components.Registry
+	conn    net.Conn
+	closing bool
 }
 
-func NewConnHandler(cRegistry *component.Registry, conn net.Conn) (*ConnHandler, error) {
-	logrus, err := component.Logrus(cRegistry)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ConnHandler{cRegistry: cRegistry, logrus: logrus, conn: conn, closing: false}, nil
+func NewConnHandler(cReg *components.Registry, conn net.Conn) (*ConnHandler, error) {
+	return &ConnHandler{cReg: cReg, conn: conn, closing: false}, nil
 }
 
 func (h *ConnHandler) Serve() {
-	myLogger := h.logrus.WithClassFunc(pkgPath, "ConnHandler", "Serve").WithField("remote", h.conn.RemoteAddr().String())
+	myLogger := logruscomponent.MustReg(h.cReg).Logger().WithField("remote", h.conn.RemoteAddr().String())
 	myLogger.Info("Got a connection")
 	for !h.closing {
 		cmdBuf := make([]byte, 5)
