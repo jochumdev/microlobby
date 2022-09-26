@@ -6,14 +6,12 @@ import (
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
 	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
-	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
 	"jochum.dev/jo-micro/components"
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/badwords/v1/badwordshandler"
 	"wz2100.net/microlobby/service/badwords/v1/config"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
-	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
 
 func main() {
@@ -41,32 +39,6 @@ func main() {
 				logger.Fatal(err)
 				return err
 			}
-
-			logger := logruscomponent.MustReg(cReg).Logger()
-
-			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(logger),
-			)
-			authVerifier.AddRules(
-				endpointroles.RouterRule,
-				endpointroles.NewRule(
-					endpointroles.Endpoint(badwordspb.BadwordsV1Service.Censor),
-					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(badwordspb.BadwordsV1Service.Check),
-					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(badwordspb.BadwordsV1Service.ExtractProfanity),
-					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(badwordspb.BadwordsV1Service.IsProfane),
-					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
-				),
-			)
-			auth2.ClientAuthMustReg(cReg).Plugin().SetVerifier(authVerifier)
 
 			return nil
 		}),

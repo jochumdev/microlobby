@@ -6,7 +6,10 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4/util/log"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"jochum.dev/jo-micro/auth2"
+	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
 	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/service/settings/v1/db"
 	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
@@ -72,6 +75,33 @@ func (h *Handler) Init(components *components.Registry, cli *cli.Context) error 
 			router.Params("id"),
 		),
 	)
+
+	authVerifier := endpointroles.NewVerifier(
+		endpointroles.WithLogrus(logruscomponent.MustReg(h.cReg).Logger()),
+	)
+	authVerifier.AddRules(
+		endpointroles.NewRule(
+			endpointroles.Endpoint(settingsservicepb.SettingsV1Service.List),
+			endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Create),
+			endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Get),
+			endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Update),
+			endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Upsert),
+			endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
+		),
+	)
+	auth2.ClientAuthMustReg(h.cReg).Plugin().AddVerifier(authVerifier)
 
 	settingsservicepb.RegisterSettingsV1ServiceHandler(h.cReg.Service().Server(), h)
 

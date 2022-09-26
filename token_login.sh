@@ -7,8 +7,6 @@ function main() {
 
     export ACCESS_TOKEN=$(echo $JSON | jq -r '.accessToken')
     export REFRESH_TOKEN=$(echo $JSON | jq -r '.refreshToken')
-
-    echo -e "Access Token: $ACCESS_TOKEN"
 }
 
 main $1 $2 $3;

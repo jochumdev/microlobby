@@ -6,7 +6,6 @@ import (
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
 	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
-	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
 	"jochum.dev/jo-micro/components"
 	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
@@ -42,16 +41,6 @@ func main() {
 				logger.Fatal(err)
 				return err
 			}
-
-			logger := logruscomponent.MustReg(cReg).Logger()
-
-			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(logger),
-			)
-			authVerifier.AddRules(
-				endpointroles.RouterRule,
-			)
-			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
 			return nil
 		}),

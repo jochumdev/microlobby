@@ -44,13 +44,10 @@ func main() {
 				return err
 			}
 
-			logger := logruscomponent.MustReg(cReg).Logger()
-
 			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(logger),
+				endpointroles.WithLogrus(logruscomponent.MustReg(cReg).Logger()),
 			)
 			authVerifier.AddRules(
-				endpointroles.RouterRule,
 				endpointroles.NewRule(
 					endpointroles.Endpoint(gamedbpb.GameDBV1Service.List),
 					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
@@ -68,7 +65,7 @@ func main() {
 					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
 				),
 			)
-			auth2ClientReg.Plugin().SetVerifier(authVerifier)
+			auth2ClientReg.Plugin().AddVerifier(authVerifier)
 
 			return nil
 		}),

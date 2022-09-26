@@ -7,7 +7,10 @@ import (
 	"github.com/urfave/cli/v2"
 	"go-micro.dev/v4/server"
 
+	"jochum.dev/jo-micro/auth2"
+	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
 	"jochum.dev/jo-micro/components"
+	"jochum.dev/jo-micro/logruscomponent"
 	"jochum.dev/jo-micro/router"
 	"wz2100.net/microlobby/shared/proto/badwordspb/v1"
 )
@@ -60,6 +63,29 @@ func (h *Handler) Init(components *components.Registry, cli *cli.Context) error 
 			router.Endpoint(badwordspb.BadwordsV1Service.Check),
 		),
 	)
+
+	authVerifier := endpointroles.NewVerifier(
+		endpointroles.WithLogrus(logruscomponent.MustReg(h.cReg).Logger()),
+	)
+	authVerifier.AddRules(
+		endpointroles.NewRule(
+			endpointroles.Endpoint(badwordspb.BadwordsV1Service.Censor),
+			endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(badwordspb.BadwordsV1Service.Check),
+			endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(badwordspb.BadwordsV1Service.ExtractProfanity),
+			endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+		),
+		endpointroles.NewRule(
+			endpointroles.Endpoint(badwordspb.BadwordsV1Service.IsProfane),
+			endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
+		),
+	)
+	auth2.ClientAuthMustReg(h.cReg).Plugin().AddVerifier(authVerifier)
 
 	badwordspb.RegisterBadwordsV1ServiceHandler(h.cReg.Service().Server(), h)
 

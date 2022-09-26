@@ -57,7 +57,8 @@ func (h *Handler) Init(components *components.Registry, cli *cli.Context) error 
 
 	h.cReg = components
 
-	ctx, err := auth2.ClientAuthMustReg(h.cReg).Plugin().ServiceContext(context.Background())
+	auth2Client := auth2.ClientAuthMustReg(h.cReg).Plugin()
+	ctx, err := auth2Client.ServiceContext(context.Background())
 	if err != nil {
 		return errors.FromError(err)
 	}

@@ -6,7 +6,6 @@ import (
 	"go-micro.dev/v4/logger"
 	"jochum.dev/jo-micro/auth2"
 	jwtClient "jochum.dev/jo-micro/auth2/plugins/client/jwt"
-	"jochum.dev/jo-micro/auth2/plugins/verifier/endpointroles"
 	"jochum.dev/jo-micro/buncomponent"
 	"jochum.dev/jo-micro/components"
 	"jochum.dev/jo-micro/logruscomponent"
@@ -14,7 +13,6 @@ import (
 	"wz2100.net/microlobby/service/settings/v1/config"
 	"wz2100.net/microlobby/service/settings/v1/settingshandler"
 	_ "wz2100.net/microlobby/shared/micro_plugins"
-	"wz2100.net/microlobby/shared/proto/settingsservicepb/v1"
 )
 
 func main() {
@@ -41,36 +39,6 @@ func main() {
 				logger.Fatal(err)
 				return err
 			}
-
-			logger := logruscomponent.MustReg(cReg).Logger()
-
-			authVerifier := endpointroles.NewVerifier(
-				endpointroles.WithLogrus(logger),
-			)
-			authVerifier.AddRules(
-				endpointroles.RouterRule,
-				endpointroles.NewRule(
-					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.List),
-					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Create),
-					endpointroles.RolesAllow(auth2.RolesServiceAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Get),
-					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Update),
-					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
-				),
-				endpointroles.NewRule(
-					endpointroles.Endpoint(settingsservicepb.SettingsV1Service.Upsert),
-					endpointroles.RolesAllow(auth2.RolesServiceAndUsersAndAdmin),
-				),
-			)
-			auth2ClientReg.Plugin().SetVerifier(authVerifier)
 
 			return nil
 		}),
